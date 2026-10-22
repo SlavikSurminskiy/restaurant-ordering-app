@@ -9,6 +9,7 @@ datasource db {
 }
 
 /// Money fields (price, unitPrice, subtotal, discount, total) are integers in cents: 12550 = $125.50.
+/// Hand-written CHECK constraints live in the separate migration `*_check_constraints` (Prisma can't model them).
 
 enum Role {
   ADMIN
