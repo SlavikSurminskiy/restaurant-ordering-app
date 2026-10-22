@@ -1,0 +1,68 @@
+{
+  "name": "database",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/database/src",
+  "projectType": "library",
+  "tags": ["scope:backend", "type:data-access"],
+  "targets": {
+    "prisma-generate": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/prisma/**/*.prisma",
+        "{projectRoot}/prisma.config.ts"
+      ],
+      "outputs": ["{projectRoot}/src/generated"],
+      "options": {
+        "command": "prisma generate",
+        "cwd": "{projectRoot}",
+        "env": {
+          "DATABASE_URL": "postgresql://mock:mock@localhost:5432/mock"
+        }
+      }
+    },
+    "prisma-migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate dev",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "prisma-migrate-deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate deploy",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "prisma-reset": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate reset",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "prisma-seed": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["prisma-generate"],
+      "options": {
+        "command": "prisma db seed",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "prisma-studio": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "options": {
+        "command": "prisma studio",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "lint": {
+      "dependsOn": ["prisma-generate"]
+    },
+    "test": {
+      "dependsOn": ["prisma-generate"]
+    }
+  }
+}

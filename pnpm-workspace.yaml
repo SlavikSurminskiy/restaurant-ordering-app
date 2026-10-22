@@ -1,0 +1,40 @@
+packages:
+  - 'apps/*'
+  - 'libs/*'
+  - 'libs/shared/*'
+allowBuilds:
+  '@nestjs/core': true
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  '@swc/core': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  nx: true
+  prisma: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@nx/devkit@24.0.0'
+  - '@nx/js@24.0.0'
+  - '@nx/nx-darwin-arm64@24.0.0'
+  - '@nx/nx-darwin-x64@24.0.0'
+  - '@nx/nx-freebsd-x64@24.0.0'
+  - '@nx/nx-linux-arm-gnueabihf@24.0.0'
+  - '@nx/nx-linux-arm64-gnu@24.0.0'
+  - '@nx/nx-linux-arm64-musl@24.0.0'
+  - '@nx/nx-linux-x64-gnu@24.0.0'
+  - '@nx/nx-linux-x64-musl@24.0.0'
+  - '@nx/nx-win32-arm64-msvc@24.0.0'
+  - '@nx/nx-win32-x64-msvc@24.0.0'
+  - '@nx/workspace@24.0.0'
+  - 'nx@24.0.0'
+  - '@nx/angular@24.0.0'
+  - '@nx/eslint@24.0.0'
+  - '@nx/docker@24.0.0'
+  - '@nx/jest@24.0.0'
+  - '@nx/nest@24.0.0'
+  - '@nx/node@24.0.0'
+  - '@nx/eslint-plugin@24.0.0'
+  - '@nx/web@24.0.0'
+  - '@nx/vitest@24.0.0'
+  - '@nx/webpack@24.0.0'
