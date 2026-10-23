@@ -1,0 +1,9 @@
+@for (row of rowIndexes(); track row) {
+  <div class="dish-skeleton__row" [style.height.px]="rowHeight">
+    <div class="dish-skeleton__photo"></div>
+    <div class="dish-skeleton__lines">
+      <div class="dish-skeleton__line dish-skeleton__line--short"></div>
+      <div class="dish-skeleton__line"></div>
+    </div>
+  </div>
+}

@@ -1,0 +1,34 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+}
+
+.list {
+  flex: 1;
+}
+
+.skeleton {
+  margin-top: 70px;
+  flex: 1;
+}
+
+.row {
+  box-sizing: border-box;
+  padding: 12px 0;
+}
+
+.category {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  font: var(--mat-sys-headline-medium);
+}
+
+.message {
+  text-align: center;
+  gap: 8px;
+}

@@ -1,0 +1,31 @@
+@if (dish().photoUrl; as url) {
+  <img
+    class="dish-card__photo"
+    [ngSrc]="url"
+    [alt]="dish().name"
+    priority="high"
+    width="88"
+    height="88"
+  />
+} @else {
+  <div
+    class="dish-card__photo dish-card__photo--placeholder"
+    aria-hidden="true"
+  >
+    <mat-icon>restaurant</mat-icon>
+    No photo
+  </div>
+}
+
+<div class="dish-card__info">
+  <h3 class="dish-card__name">{{ dish().name }}</h3>
+  <p class="dish-card__description">{{ dish().description }}</p>
+</div>
+
+<div class="dish-card__meta">
+  <span class="dish-card__price">{{ priceLabel() }}</span>
+
+  @if (!dish().available) {
+    <span class="dish-card__badge">Unavailable</span>
+  }
+</div>

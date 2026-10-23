@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+.dish-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  padding: 12px 0;
+}
+
+.dish-skeleton__photo,
+.dish-skeleton__line {
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-high);
+  animation: dish-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dish-skeleton__photo {
+  flex: none;
+  width: 88px;
+  height: 88px;
+}
+
+.dish-skeleton__lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dish-skeleton__line {
+  height: 16px;
+  width: 100%;
+}
+
+.dish-skeleton__line--short {
+  width: 40%;
+}
+
+@keyframes dish-skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dish-skeleton__photo,
+  .dish-skeleton__line {
+    animation: none;
+  }
+}
