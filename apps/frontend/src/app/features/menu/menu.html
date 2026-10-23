@@ -1,0 +1,64 @@
+<mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
+  <mat-label>Search dishes</mat-label>
+  <mat-icon matPrefix>search</mat-icon>
+  <input
+    #query
+    matInput
+    type="search"
+    [value]="searchQuery()"
+    (input)="search(query.value)"
+  />
+</mat-form-field>
+
+@switch (store.status()) {
+  @case (LoadStatus.Error) {
+    <div class="message" role="alert">
+      <p>{{ store.error() }}</p>
+      <button matButton="filled" (click)="store.loadMenu()">Retry</button>
+    </div>
+  }
+  @case (LoadStatus.Loaded) {
+    @if (visibleMenuRows().length) {
+      <div>
+        <mat-button-toggle-group
+          aria-label="Menu categories"
+          multiple
+          hideMultipleSelectionIndicator
+        >
+          @for (category of categories(); track category.id) {
+            <mat-button-toggle
+              [value]="category.id"
+              [checked]="category.id === activeCategoryId()"
+              (change)="onCategoryChange($event)"
+            >
+              {{ category.name }}
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+
+      <cdk-virtual-scroll-viewport
+        class="list"
+        [itemSize]="MENU_ROW_HEIGHT"
+        (scrolledIndexChange)="firstVisibleIndex.set($event)"
+      >
+        <div
+          *cdkVirtualFor="let row of visibleMenuRows(); trackBy: trackRow"
+          class="row"
+          [style.height.px]="MENU_ROW_HEIGHT"
+        >
+          @if (row.kind === MenuRowKind.Category) {
+            <h2 class="category">{{ row.category.name }}</h2>
+          } @else {
+            <app-dish-card [dish]="row.dish" />
+          }
+        </div>
+      </cdk-virtual-scroll-viewport>
+    } @else {
+      <p class="message">No dishes match your filters.</p>
+    }
+  }
+  @default {
+    <app-dish-skeleton class="skeleton" />
+  }
+}

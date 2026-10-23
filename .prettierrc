@@ -1,3 +1,10 @@
 {
-  "singleQuote": true
+  "singleQuote": true,
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "apps/frontend/src/app/**/*.html",
+      "options": { "parser": "angular" }
+    }
+  ]
 }

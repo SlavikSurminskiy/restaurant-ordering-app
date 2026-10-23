@@ -1,0 +1,31 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.shell__toolbar {
+  gap: 16px;
+}
+
+.shell__health {
+  margin-left: auto;
+  font: var(--mat-sys-label-medium);
+}
+
+.shell__discount {
+  font: var(--mat-sys-title-small);
+}
+
+.shell__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  min-height: 0;
+  overflow: auto;
+  box-sizing: border-box;
+  margin-inline: auto;
+  padding: 24px 16px 0;
+}

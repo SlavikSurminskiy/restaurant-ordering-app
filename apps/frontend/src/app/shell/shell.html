@@ -1,0 +1,23 @@
+<mat-toolbar class="shell__toolbar">
+  <span>Restaurant Ordering</span>
+
+  <span class="shell__health">
+    @if (health.isLoading()) {
+      Checking…
+    } @else if (health.error()) {
+      API: down
+    } @else if (health.value(); as data) {
+      API: {{ data.status }} · DB: {{ data.database }}
+    }
+  </span>
+
+  @if (discount() > 0) {
+    <span class="shell__discount">
+      {{ discount() | money }} off every order
+    </span>
+  }
+</mat-toolbar>
+
+<main class="shell__content">
+  <router-outlet />
+</main>

@@ -1,9 +1,20 @@
 import { Route } from '@angular/router';
 
+import { appResolver } from './app.resolver';
+import { Shell } from './shell/shell';
+
 export const appRoutes: Route[] = [
   {
     path: '',
-    loadComponent: () => import('./features/home/home').then((m) => m.Home),
+    component: Shell,
+    resolve: { appData: appResolver },
+    children: [
+      {
+        path: 'menu',
+        loadComponent: () => import('./features/menu/menu').then((m) => m.Menu),
+      },
+      { path: '', pathMatch: 'full', redirectTo: 'menu' },
+      { path: '**', redirectTo: 'menu' },
+    ],
   },
-  { path: '**', redirectTo: '' },
 ];

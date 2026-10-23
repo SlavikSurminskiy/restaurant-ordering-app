@@ -44,12 +44,13 @@ async function seedMenu(): Promise<boolean> {
         data: { name: category.name, createdAt: nextCreatedAt() },
       });
       await tx.dish.createMany({
-        data: category.dishes.map((dish, index) => ({
+        data: category.dishes.map((dish) => ({
           categoryId,
           name: dish.name,
           description: dish.description,
-          // Every other dish has a photo, to show both states in the UI.
-          photoUrl: index % 2 === 0 ? `/dishes/${category.photo}.jpg` : null,
+          photoUrl: dish.photo
+            ? `/dishes/${category.slug}/${dish.photo}.jpg`
+            : null,
           price: dish.price,
           isOpenPrice: dish.price === null,
           available: dish.available ?? true,

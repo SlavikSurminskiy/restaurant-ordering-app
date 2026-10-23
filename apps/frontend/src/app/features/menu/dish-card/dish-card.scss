@@ -1,0 +1,63 @@
+:host {
+  --dish-card-photo-size: 88px;
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  contain: inline-size;
+}
+
+:host(.dish-card--unavailable) .dish-card__photo,
+:host(.dish-card--unavailable) .dish-card__info,
+:host(.dish-card--unavailable) .dish-card__price {
+  opacity: 0.6;
+}
+
+.dish-card__photo {
+  width: var(--dish-card-photo-size);
+  height: var(--dish-card-photo-size);
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.dish-card__photo--placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.dish-card__info {
+  flex: 1;
+  align-self: flex-start;
+  min-width: 0;
+}
+
+.dish-card__name {
+  margin-top: 0;
+  font: var(--mat-sys-title-medium);
+}
+
+.dish-card__description {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.dish-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  padding-right: 16px;
+  font: var(--mat-sys-title-medium);
+}
+
+.dish-card__badge {
+  color: var(--mat-sys-error);
+}
