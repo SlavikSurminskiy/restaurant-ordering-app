@@ -1,0 +1,9 @@
+# Text files use LF in the repository and in every working copy, whatever
+# core.autocrlf is set to (Git for Windows enables it by default). Prettier
+# writes LF as well (`endOfLine` in .prettierrc), so formatting never shows
+# up as a line-ending-only change.
+* text=auto eol=lf
+
+*.jpg binary
+*.png binary
+*.ico binary
