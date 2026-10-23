@@ -21,30 +21,40 @@
         }
       }
     },
+    "postgres-up": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose up -d --wait",
+        "cwd": "{workspaceRoot}"
+      }
+    },
     "prisma-migrate": {
       "executor": "nx:run-commands",
       "options": {
         "command": "prisma migrate dev",
         "cwd": "{projectRoot}"
-      }
+      },
+      "dependsOn": ["postgres-up"]
     },
     "prisma-migrate-deploy": {
       "executor": "nx:run-commands",
       "options": {
         "command": "prisma migrate deploy",
         "cwd": "{projectRoot}"
-      }
+      },
+      "dependsOn": ["postgres-up"]
     },
     "prisma-reset": {
       "executor": "nx:run-commands",
       "options": {
         "command": "prisma migrate reset",
         "cwd": "{projectRoot}"
-      }
+      },
+      "dependsOn": ["postgres-up"]
     },
     "prisma-seed": {
       "executor": "nx:run-commands",
-      "dependsOn": ["prisma-generate"],
+      "dependsOn": ["prisma-generate", "prisma-migrate-deploy"],
       "options": {
         "command": "prisma db seed",
         "cwd": "{projectRoot}"
@@ -56,7 +66,8 @@
       "options": {
         "command": "prisma studio",
         "cwd": "{projectRoot}"
-      }
+      },
+      "dependsOn": ["postgres-up"]
     },
     "lint": {
       "dependsOn": ["prisma-generate"]

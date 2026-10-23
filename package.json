@@ -13,6 +13,7 @@
     "lint": "nx run-many -t lint",
     "format": "nx format:write",
     "format:check": "nx format:check",
+    "db:up": "nx run database:postgres-up",
     "db:generate": "nx run database:prisma-generate",
     "db:migrate": "nx run database:prisma-migrate",
     "db:deploy": "nx run database:prisma-migrate-deploy",

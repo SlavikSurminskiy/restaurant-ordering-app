@@ -46,7 +46,7 @@
       "continuous": true,
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": ["build", "database:prisma-migrate-deploy"],
+      "dependsOn": ["build", "database:prisma-seed"],
       "readyWhen": {
         "signal": true
       },

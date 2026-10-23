@@ -9,8 +9,7 @@ Restaurant ordering app: Nx 24 monorepo, Angular 22 frontend, NestJS 11 backend,
 ```bash
 pnpm install                 # postinstall also runs prisma generate
 pnpm env:init                # create .env from .env.example (never overwrites)
-docker compose up -d --wait  # PostgreSQL on 5432
-pnpm start                   # nx serve frontend → also starts backend (3000) and frontend (4200)
+pnpm start                   # docker Postgres → migrate deploy → seed → backend (3000) → frontend (4200)
 
 pnpm build | pnpm test | pnpm lint      # run-many over all projects
 pnpm format | pnpm format:check
@@ -35,11 +34,11 @@ Add `--skip-nx-cache` when you need a real re-run; Nx caches build/lint/test.
 apps/frontend            Angular SPA; /api is proxied to the backend (apps/frontend/proxy.conf.mjs)
 apps/backend             NestJS, global prefix /api
 libs/shared/api-types    @restaurant/shared-api-types — API contracts used by both apps
-libs/database            @restaurant/database — Prisma schema/migrations/seed, PrismaService (backend only)
+libs/database            @restaurant/database — Prisma schema/migrations, seed (`src/seed`), PrismaService (backend only)
 ```
 
 - **Module boundaries** are enforced by `@nx/enforce-module-boundaries` (`eslint.config.mjs`) via tags: `scope:frontend` and `scope:backend` may only import their own scope plus `scope:shared`. Every new project needs a `scope:*` tag. Prisma models must never leak into `shared-api-types`; the frontend depends only on API contracts.
-- **Startup chain**: `frontend:serve` depends on `backend:serve`, which depends on `backend:build` (→ `^prisma-generate`) and `database:prisma-migrate-deploy`. The backend reports readiness to Nx through `NX_READY_SIGNAL_SOCKET` in `apps/backend/src/main.ts` (`readyWhen: signal`), and only then the frontend dev server starts.
+- **Startup chain**: `frontend:serve` depends on `backend:serve`, which depends on `backend:build` (→ `^prisma-generate`) and `database:prisma-seed` (→ `prisma-migrate-deploy` → `postgres-up`, i.e. `docker compose up -d --wait`). All `database:prisma-*` targets that need a DB depend on `postgres-up`; the seed is idempotent, so it runs on every start. The backend reports readiness to Nx through `NX_READY_SIGNAL_SOCKET` in `apps/backend/src/main.ts` (`readyWhen: signal`), and only then the frontend dev server starts.
 - **Backend wiring**: `ConfigModule` is global and reads `.env` if present; `DatabaseModule` is `@Global()` and exports `PrismaService` (extends `PrismaClient` with the `PrismaPg` driver adapter). `GET /api/health` returns `HealthResponse` from shared-api-types.
 - **Frontend conventions**: standalone components, zoneless, explicit `ChangeDetectionStrategy.OnPush`, signals; feature pages live in `src/app/features/<name>/` and are lazy-loaded from `app.routes.ts`. Material theme is defined in `src/styles.scss` with `mat.theme`. Tests use `@testing-library/angular` plus `HttpTestingController`.
 - **Generators**: `nx.json` sets defaults (scss, OnPush, vitest). Prefer `pnpm nx g ...` and `@nx/workspace:move` for renames; after a move, fix relative paths in the project's `vitest.config.mts` and `workspace:*` deps in apps' `package.json`, which the generator does not update.
@@ -52,5 +51,6 @@ libs/database            @restaurant/database — Prisma schema/migrations/seed,
 - **Env loading**: Nx loads the root `.env` into every task. Prisma 7 does not read `.env` itself, so run the Prisma CLI only via `pnpm db:*` / `nx run database:*`, never `prisma ...` directly. `prisma-generate` sets a mock `DATABASE_URL` in `libs/database/project.json` so generation works without `.env` (postinstall, CI).
 - **`BACKEND_PORT`, not `PORT`**: Nx passes `.env` to all tasks and the Angular dev server would also pick up `PORT`.
 - **Prisma client** is generated to `libs/database/src/generated` (git-ignored, excluded from lint/prettier). `moduleFormat = "cjs"` in `schema.prisma` is required: the backend is bundled as CommonJS by webpack, and `esm` breaks the build.
+- **Migrations**: never edit a Prisma-generated `migration.sql`. Schema change → `pnpm db:migrate --name <x>` → commit. CHECK constraints and other SQL Prisma can't model go into a separate `--create-only` migration and a separate commit (see `docs/architecture.md`). `prisma migrate reset` refuses to run under Claude Code without explicit user consent.
 - **New env variables** must also be added to `.env.example`; `.env` and `.env.*` are git-ignored.
 - `backend:serve` opens the Node inspector on 9229. Leftover dev servers can hold ports 3000/4200/9229 after a run.
