@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same branch cancels the run that is still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  # nx-set-shas reads previous workflow runs to find the last green commit on main.
+  actions: read
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # nx affected compares against the base commit, so it needs the history.
+          fetch-depth: 0
+          filter: tree:0
+
+      # pnpm version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # postinstall generates the Prisma Client with a mock DATABASE_URL; no .env or database needed.
+      - run: pnpm install --frozen-lockfile
+
+      - uses: nrwl/nx-set-shas@v5
+
+      - run: pnpm nx format:check
+      - run: pnpm nx affected -t lint test build
