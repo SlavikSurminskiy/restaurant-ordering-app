@@ -60,12 +60,10 @@
     "@nx/angular:library": {
       "linter": "eslint",
       "unitTestRunner": "vitest-angular",
-      "style": "scss",
-      "changeDetection": "OnPush"
+      "style": "scss"
     },
     "@nx/angular:component": {
-      "style": "scss",
-      "changeDetection": "OnPush"
+      "style": "scss"
     },
     "@nx/nest:library": {
       "linter": "eslint",
