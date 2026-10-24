@@ -1,5 +1,3 @@
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { render } from '@testing-library/angular';
 
@@ -20,6 +18,14 @@ describe(Shell.name, () => {
     expect(renderResult.getByText('$5.00 off every order')).toBeTruthy();
   });
 
+  it('should show the connection status', async () => {
+    const { renderResult } = await Arrange.setup(Arrange.createAppData());
+
+    expect(renderResult.getByRole('status').textContent).toContain(
+      'Disconnected',
+    );
+  });
+
   it('should hide the discount when there is none', async () => {
     const { renderResult } = await Arrange.setup(
       Arrange.createAppData({ discount: 0 }),
@@ -33,11 +39,7 @@ const Arrange = {
   async setup(appData: AppData) {
     const renderResult = await render(Shell, {
       inputs: { appData },
-      providers: [
-        provideRouter([]),
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [provideRouter([])],
     });
 
     return { renderResult };

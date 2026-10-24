@@ -1,21 +1,14 @@
 <mat-toolbar class="shell__toolbar">
-  <span>Restaurant Ordering</span>
-
-  <span class="shell__health">
-    @if (health.isLoading()) {
-      Checking…
-    } @else if (health.error()) {
-      API: down
-    } @else if (health.value(); as data) {
-      API: {{ data.status }} · DB: {{ data.database }}
-    }
-  </span>
+  <span class="shell__title">Restaurant Ordering</span>
 
   @if (discount() > 0) {
-    <span class="shell__discount">
-      {{ discount() | money }} off every order
-    </span>
+    <div class="shell__discount">
+      <mat-icon class="shell__discount-icon" aria-hidden="true">sell</mat-icon>
+      <span>{{ discount() | money }} off every order</span>
+    </div>
   }
+
+  <app-connection-indicator class="shell__connection" />
 </mat-toolbar>
 
 <main class="shell__content">
