@@ -4,7 +4,7 @@ import { PrismaClient } from '../generated/prisma/client';
 
 import { menu } from './menu';
 import { users } from './users';
-import { hashPassword } from './password';
+import { hashPassword } from '../lib/password';
 
 // Run via `pnpm db:seed`: Nx loads .env and `prisma db seed` passes it on.
 const connectionString = process.env['DATABASE_URL'];
