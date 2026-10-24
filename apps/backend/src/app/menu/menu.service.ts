@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService, Prisma } from '@restaurant/database';
 import { MenuResponse } from '@restaurant/shared-api-types';
 
+import { CATEGORY_SELECT, DISH_SELECT } from './menu.constants';
+
 @Injectable()
 export class MenuService {
   constructor(private readonly prisma: PrismaService) {}
@@ -11,26 +13,14 @@ export class MenuService {
     const { categories, dishes } = await this.prisma.$transaction(
       async (tx) => {
         const categories = await tx.category.findMany({
-          select: {
-            id: true,
-            name: true,
-          },
+          select: CATEGORY_SELECT,
           orderBy: {
             createdAt: 'asc',
           },
         });
 
         const dishes = await tx.dish.findMany({
-          select: {
-            id: true,
-            categoryId: true,
-            name: true,
-            description: true,
-            photoUrl: true,
-            price: true,
-            isOpenPrice: true,
-            available: true,
-          },
+          select: DISH_SELECT,
           orderBy: {
             createdAt: 'asc',
           },

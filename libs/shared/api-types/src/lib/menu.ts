@@ -21,3 +21,21 @@ export interface MenuResponse {
   categories: Category[];
   dishes: Dish[];
 }
+
+export interface CreateCategoryRequest {
+  name: string;
+}
+
+export type UpdateCategoryRequest = Partial<CreateCategoryRequest>;
+
+export interface CreateDishRequest {
+  categoryId: string;
+  name: string;
+  description?: string;
+  photoUrl?: string | null;
+  price: Money | null;
+  isOpenPrice: boolean;
+  available?: boolean;
+}
+
+export type UpdateDishRequest = Partial<CreateDishRequest>;
