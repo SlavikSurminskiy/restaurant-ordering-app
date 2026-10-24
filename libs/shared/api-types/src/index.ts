@@ -1,3 +1,4 @@
+export * from './lib/auth';
 export * from './lib/discount';
 export * from './lib/events';
 export * from './lib/health';
