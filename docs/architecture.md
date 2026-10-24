@@ -47,10 +47,10 @@ The frontend cannot import `@restaurant/database`: lint fails if it does. Prisma
 - `EventBus` is an in-memory RxJS `Subject`, provided by the global `EventsModule`. Feature services inject it and call `publish(event)` only after a successful write.
 - Clients receive events in the order they were published: `publish()` is synchronous, and each client has one ordered stream. So publish synchronously after the transaction commits and before returning the response, never before the commit or in the background. Combined with foreign keys (a dish needs a committed category; a category with dishes can't be deleted), this guarantees that `menu.category.upserted` arrives before the dishes of that category, and `menu.dish.deleted` before `menu.category.deleted`. When one request changes several entities, publish parents before children.
 - Events are not stored: a client gets only events published while it is connected. So a client opens the stream first and buffers events, then loads the snapshot (`GET /api/menu`), then applies the buffer on top; it repeats this after every reconnect. Events carry no version, so this order is what keeps an older snapshot from overwriting a newer event.
-- Event payloads are the `ServerEvent` union in `libs/shared/api-types/src/lib/events.ts`, discriminated by `type` (`menu.category.upserted`, `menu.dish.deleted`, …). Each is sent as the `data` of a default `message` event, so the client needs one `onmessage` handler. `*.upserted` events carry the full entity, not a diff.
+- Event payloads are the `ServerEvent` union in `libs/shared/api-types/src/lib/events.ts`, discriminated by `type`; the type names live in the `MenuEventType` enum (`menu.category.upserted`, `menu.dish.deleted`, …), so code never spells them as strings. Each is sent as the `data` of a default `message` event, so the client needs one `onmessage` handler. `*.upserted` events carry the full entity, not a diff.
 - Every 20 s the stream sends an SSE comment (`: heartbeat`), which `EventSource` ignores. It keeps idle connections from being dropped by proxies; the Angular dev proxy passes the stream through without buffering.
 - On shutdown `EventBus` completes, which ends open streams, and the backend is created with `forceCloseConnections`, so `app.close()` doesn't wait for keep-alive sockets of connected clients.
-- Publishers (menu admin, orders) and the frontend client come in later PRs.
+- Publishers (menu admin, orders) come in later PRs.
 
 ## Environment variables
 

@@ -1,138 +1,247 @@
 import { HttpStatusCode } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { of, Subject, throwError } from 'rxjs';
-import type { Mocked } from 'vitest';
+import { Subject } from 'rxjs';
+import { vi } from 'vitest';
 
-import { Dish } from '@restaurant/shared-api-types';
+import {
+  Dish,
+  Category,
+  ServerEvent,
+  MenuEventType,
+} from '@restaurant/shared-api-types';
 
 import { ApiError } from '../../../core/http/api-error';
-import { DomainService } from '../../../shared/domain/domain.service';
+import { SseService } from '../../../core/realtime/sse.service';
 import { MenuDomainModel } from '../../../shared/domain/domain.models';
+import { DomainService } from '../../../shared/domain/domain.service';
 
-import { LoadStatus } from './menu-store.enums';
+import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
+import { MenuUpdate } from './menu-store.models';
+import { MenuStoreService } from './menu-store.service';
 import { MenuStore } from './menu.store';
 
 describe('MenuStore', () => {
-  it('should load the menu from the domain service', () => {
-    const { store, domainServiceMock } = Arrange.setup();
+  describe('keepMenuUpToDate', () => {
+    it('should be loading until the first snapshot', () => {
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
 
-    store.loadMenu();
+      store.keepMenuUpToDate();
 
-    expect(domainServiceMock.getMenu).toHaveBeenCalled();
-    expect(store.status()).toBe(LoadStatus.Loaded);
-    expect(store.sections()).toEqual(Arrange.createMenu().sections);
+      expect(store.status()).toBe(LoadStatus.Loading);
+      expect(store.sections()).toEqual([]);
+    });
+
+    it('should follow the menu updates of the service', () => {
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+
+      store.keepMenuUpToDate();
+      spies.menuUpdates$.next(Arrange.createSnapshot());
+
+      expect(
+        TestBed.inject(MenuStoreService).menuUpdates,
+      ).toHaveBeenCalledOnce();
+
+      expect(store.status()).toBe(LoadStatus.Loaded);
+    });
   });
 
-  it('should be loading while the menu request is in flight', () => {
-    const { store, domainServiceMock } = Arrange.setup();
-    const response = new Subject<MenuDomainModel>();
-    domainServiceMock.getMenu.mockReturnValue(response);
+  describe('snapshot', () => {
+    it('should show the menu from a snapshot', () => {
+      const salads = Arrange.createCategory();
+      const caesar = Arrange.createDish();
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+      store.keepMenuUpToDate();
 
-    store.loadMenu();
-    expect(store.status()).toBe(LoadStatus.Loading);
+      spies.menuUpdates$.next(Arrange.createSnapshot());
 
-    response.next(Arrange.createMenu());
-    expect(store.status()).toBe(LoadStatus.Loaded);
+      expect(store.status()).toBe(LoadStatus.Loaded);
+
+      expect(store.sections()).toEqual([
+        { category: salads, dishes: [caesar] },
+      ]);
+    });
+
+    it('should show a readable error while there is no menu, until a snapshot loads', () => {
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+      store.keepMenuUpToDate();
+
+      spies.menuUpdates$.next(Arrange.createSnapshotFailed());
+      expect(store.status()).toBe(LoadStatus.Error);
+      expect(store.error()).toBe('The requested data was not found.');
+
+      spies.menuUpdates$.next(Arrange.createSnapshot());
+      expect(store.status()).toBe(LoadStatus.Loaded);
+      expect(store.error()).toBeNull();
+    });
+
+    it('should keep a shown menu when a reload fails', () => {
+      const caesar = Arrange.createDish();
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+      store.keepMenuUpToDate();
+      spies.menuUpdates$.next(Arrange.createSnapshot());
+
+      spies.menuUpdates$.next(Arrange.createSnapshotFailed());
+
+      expect(store.status()).toBe(LoadStatus.Loaded);
+      expect(store.error()).toBeNull();
+      expect(store.dishEntities()).toEqual([caesar]);
+    });
+
+    it('should replace the whole menu with a newer snapshot', () => {
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+      store.keepMenuUpToDate();
+      spies.menuUpdates$.next(Arrange.createSnapshot());
+
+      spies.menuUpdates$.next(
+        Arrange.createSnapshot({ categories: [], dishes: [] }),
+      );
+
+      expect(store.sections()).toEqual([]);
+      expect(store.dishEntities()).toEqual([]);
+    });
   });
 
-  it('should keep a readable error when loading fails', () => {
-    const { store, domainServiceMock } = Arrange.setup();
-    domainServiceMock.getMenu.mockReturnValue(
-      throwError(() => Arrange.createNotFoundError()),
-    );
+  describe('events', () => {
+    it('should replace a dish with the upserted one', () => {
+      const salads = Arrange.createCategory();
+      const repriced = Arrange.createDish({ price: 1500, available: false });
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+      store.keepMenuUpToDate();
+      spies.menuUpdates$.next(Arrange.createSnapshot());
 
-    store.loadMenu();
+      spies.menuUpdates$.next(
+        Arrange.createEvent({
+          type: MenuEventType.DishUpserted,
+          dish: repriced,
+        }),
+      );
 
-    expect(store.status()).toBe(LoadStatus.Error);
-    expect(store.error()).toBe('The requested data was not found.');
-  });
+      expect(store.sections()).toEqual([
+        { category: salads, dishes: [repriced] },
+      ]);
+    });
 
-  it('should clear the error and load again on retry', () => {
-    const { store, domainServiceMock } = Arrange.setup();
-    domainServiceMock.getMenu.mockReturnValueOnce(
-      throwError(() => Arrange.createNotFoundError()),
-    );
-    store.loadMenu();
+    it('should show a dish once its category arrives', () => {
+      const soups = Arrange.createCategory({ id: 'c-soups', name: 'Soups' });
+      const borscht = Arrange.createDish({
+        id: 'd-borscht',
+        categoryId: soups.id,
+        name: 'Borscht',
+      });
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+      store.keepMenuUpToDate();
+      spies.menuUpdates$.next(Arrange.createSnapshot());
 
-    store.loadMenu();
+      spies.menuUpdates$.next(
+        Arrange.createEvent({
+          type: MenuEventType.DishUpserted,
+          dish: borscht,
+        }),
+      );
+      expect(store.sections()).toHaveLength(1);
+      expect(store.dishEntities()).toContainEqual(borscht);
 
-    expect(store.status()).toBe(LoadStatus.Loaded);
-    expect(store.error()).toBeNull();
-  });
+      spies.menuUpdates$.next(
+        Arrange.createEvent({
+          type: MenuEventType.CategoryUpserted,
+          category: soups,
+        }),
+      );
+      expect(store.sections()[1]).toEqual({
+        category: soups,
+        dishes: [borscht],
+      });
+    });
 
-  it('should refresh a loaded menu in place', () => {
-    const { store, domainServiceMock } = Arrange.setup();
-    store.loadMenu();
-    const refreshed = new Subject<MenuDomainModel>();
-    domainServiceMock.getMenu.mockReturnValue(refreshed);
+    it('should remove deleted dishes and categories', () => {
+      const salads = Arrange.createCategory();
+      const caesar = Arrange.createDish();
+      const spies = Arrange.createSpies();
+      const store = Arrange.setup(spies);
+      store.keepMenuUpToDate();
+      spies.menuUpdates$.next(Arrange.createSnapshot());
 
-    store.loadMenu();
-    expect(store.status()).toBe(LoadStatus.Loaded);
-    expect(store.sections()).toEqual(Arrange.createMenu().sections);
+      spies.menuUpdates$.next(
+        Arrange.createEvent({
+          type: MenuEventType.DishDeleted,
+          dishId: caesar.id,
+        }),
+      );
+      spies.menuUpdates$.next(
+        Arrange.createEvent({
+          type: MenuEventType.CategoryDeleted,
+          categoryId: salads.id,
+        }),
+      );
 
-    refreshed.next({ sections: [] });
-    expect(store.sections()).toEqual([]);
-  });
-
-  it('should keep the loaded menu when a refresh fails', () => {
-    const { store, domainServiceMock } = Arrange.setup();
-    store.loadMenu();
-    domainServiceMock.getMenu.mockReturnValue(
-      throwError(() => Arrange.createNotFoundError()),
-    );
-
-    store.loadMenu();
-
-    expect(store.status()).toBe(LoadStatus.Loaded);
-    expect(store.error()).toBeNull();
-    expect(store.sections()).toEqual(Arrange.createMenu().sections);
-  });
-
-  it('should ignore a response that a newer load replaced', () => {
-    const { store, domainServiceMock } = Arrange.setup();
-    const first = new Subject<MenuDomainModel>();
-    const second = new Subject<MenuDomainModel>();
-    domainServiceMock.getMenu
-      .mockReturnValueOnce(first)
-      .mockReturnValueOnce(second);
-
-    store.loadMenu();
-    store.loadMenu();
-    first.next({ sections: [] });
-    second.next(Arrange.createMenu());
-
-    expect(store.sections()).toEqual(Arrange.createMenu().sections);
+      expect(store.sections()).toEqual([]);
+      expect(store.dishEntities()).toEqual([]);
+    });
   });
 });
 
-const Arrange = {
-  setup() {
-    const domainServiceMock = {
-      getMenu: vi.fn().mockReturnValue(of(Arrange.createMenu())),
-    } satisfies Mocked<Pick<DomainService, 'getMenu'>>;
+interface Spies {
+  menuUpdates$: Subject<MenuUpdate>;
+}
 
+const Arrange = {
+  setup(spies: Spies) {
     TestBed.configureTestingModule({
-      providers: [{ provide: DomainService, useValue: domainServiceMock }],
+      providers: [
+        { provide: DomainService, useValue: {} },
+        { provide: SseService, useValue: {} },
+      ],
     });
 
+    vi.spyOn(TestBed.inject(MenuStoreService), 'menuUpdates').mockReturnValue(
+      spies.menuUpdates$,
+    );
+
+    return TestBed.inject(MenuStore);
+  },
+
+  createSpies(): Spies {
+    return { menuUpdates$: new Subject<MenuUpdate>() };
+  },
+
+  createSnapshot(menu: MenuDomainModel = Arrange.createMenu()): MenuUpdate {
+    return { kind: MenuUpdateKind.Snapshot, menu };
+  },
+
+  createSnapshotFailed(): MenuUpdate {
     return {
-      store: TestBed.inject(MenuStore),
-      domainServiceMock,
+      kind: MenuUpdateKind.SnapshotFailed,
+      error: new ApiError(
+        HttpStatusCode.NotFound,
+        'The requested data was not found.',
+      ),
     };
+  },
+
+  createEvent(event: ServerEvent): MenuUpdate {
+    return { kind: MenuUpdateKind.Event, event };
   },
 
   createMenu(): MenuDomainModel {
     return {
-      sections: [
-        {
-          category: { id: 'c-salads', name: 'Salads' },
-          dishes: [Arrange.createDish()],
-        },
-      ],
+      categories: [Arrange.createCategory()],
+      dishes: [Arrange.createDish()],
     };
   },
 
-  createDish(): Dish {
+  createCategory(category: Partial<Category> = {}): Category {
+    return { id: 'c-salads', name: 'Salads', ...category };
+  },
+
+  createDish(dish: Partial<Dish> = {}): Dish {
     return {
       id: 'd-caesar',
       categoryId: 'c-salads',
@@ -142,13 +251,7 @@ const Arrange = {
       price: 1250,
       isOpenPrice: false,
       available: true,
+      ...dish,
     };
-  },
-
-  createNotFoundError(): ApiError {
-    return new ApiError(
-      HttpStatusCode.NotFound,
-      'The requested data was not found.',
-    );
   },
 };

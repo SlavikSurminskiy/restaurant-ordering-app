@@ -3,10 +3,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { Dish } from '@restaurant/shared-api-types';
 
-import {
-  MenuDomainModel,
-  MenuSectionDomainModel,
-} from '../../shared/domain/domain.models';
+import { MenuSectionDomainModel } from '../../shared/domain/domain.models';
 
 import { MenuRow, MenuRowKind } from './menu.models';
 import { MenuService } from './menu.service';
@@ -16,7 +13,7 @@ describe(MenuService.name, () => {
     it('should put each category header before its dishes, in menu order', () => {
       const service = Arrange.setup();
 
-      const rows = service.buildFlatMenuRows(Arrange.createMenu().sections);
+      const rows = service.buildFlatMenuRows(Arrange.createSections());
 
       expect(Arrange.keys(service, rows)).toEqual([
         'category:c-salads',
@@ -29,7 +26,7 @@ describe(MenuService.name, () => {
 
     it('should skip the header of a section without dishes', () => {
       const service = Arrange.setup();
-      const [salads, soups] = Arrange.createMenu().sections;
+      const [salads, soups] = Arrange.createSections();
 
       const rows = service.buildFlatMenuRows([
         { ...salads, dishes: [] },
@@ -48,7 +45,7 @@ describe(MenuService.name, () => {
       const service = Arrange.setup();
 
       const sections = service.filterSections(
-        Arrange.createMenu().sections,
+        Arrange.createSections(),
         ' FETA ',
       );
 
@@ -59,7 +56,7 @@ describe(MenuService.name, () => {
       const service = Arrange.setup();
 
       const sections = service.filterSections(
-        Arrange.createMenu().sections,
+        Arrange.createSections(),
         'salad',
       );
 
@@ -71,7 +68,7 @@ describe(MenuService.name, () => {
     const service = Arrange.setup();
 
     const rows = service.buildFlatMenuRows(
-      service.filterSections(Arrange.createMenu().sections, 'sushi'),
+      service.filterSections(Arrange.createSections(), 'sushi'),
     );
 
     expect(rows).toEqual([]);
@@ -87,9 +84,7 @@ describe(MenuService.name, () => {
 
   it('rowCategoryId should return the category of a header and of a dish', () => {
     const service = Arrange.setup();
-    const [header, dish] = service.buildFlatMenuRows(
-      Arrange.createMenu().sections,
-    );
+    const [header, dish] = service.buildFlatMenuRows(Arrange.createSections());
 
     expect(header.kind).toBe(MenuRowKind.Category);
     expect(service.rowCategoryId(header)).toBe('c-salads');
@@ -105,45 +100,43 @@ const Arrange = {
     return TestBed.inject(MenuService);
   },
 
-  createMenu(): MenuDomainModel {
+  createSections(): MenuSectionDomainModel[] {
     const salads = { id: 'c-salads', name: 'Salads' };
     const soups = { id: 'c-soups', name: 'Soups' };
 
-    return {
-      sections: [
-        {
-          category: salads,
-          dishes: [
-            Arrange.createDish({
-              id: 'd-caesar',
-              categoryId: salads.id,
-              name: 'Chicken Caesar',
-              description: 'Romaine, grilled chicken, parmesan',
-            }),
-            Arrange.createDish({
-              id: 'd-greek',
-              categoryId: salads.id,
-              name: 'Greek Salad',
-              description: 'Tomatoes, cucumbers, feta',
-              available: false,
-            }),
-          ],
-        },
-        {
-          category: soups,
-          dishes: [
-            Arrange.createDish({
-              id: 'd-chef-soup',
-              categoryId: soups.id,
-              name: "Chef's Soup",
-              description: 'Ask the waiter',
-              price: null,
-              isOpenPrice: true,
-            }),
-          ],
-        },
-      ],
-    };
+    return [
+      {
+        category: salads,
+        dishes: [
+          Arrange.createDish({
+            id: 'd-caesar',
+            categoryId: salads.id,
+            name: 'Chicken Caesar',
+            description: 'Romaine, grilled chicken, parmesan',
+          }),
+          Arrange.createDish({
+            id: 'd-greek',
+            categoryId: salads.id,
+            name: 'Greek Salad',
+            description: 'Tomatoes, cucumbers, feta',
+            available: false,
+          }),
+        ],
+      },
+      {
+        category: soups,
+        dishes: [
+          Arrange.createDish({
+            id: 'd-chef-soup',
+            categoryId: soups.id,
+            name: "Chef's Soup",
+            description: 'Ask the waiter',
+            price: null,
+            isOpenPrice: true,
+          }),
+        ],
+      },
+    ];
   },
 
   createDish(

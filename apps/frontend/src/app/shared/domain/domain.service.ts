@@ -1,7 +1,5 @@
 import { inject, Service } from '@angular/core';
-import { catchError, map, Observable, of } from 'rxjs';
-
-import { Dish, MenuResponse } from '@restaurant/shared-api-types';
+import { catchError, Observable, of } from 'rxjs';
 
 import { DataAccessService } from '../data-access/data-access.service';
 
@@ -12,31 +10,12 @@ export class DomainService {
   #dataAccess = inject(DataAccessService);
 
   getMenu(): Observable<MenuDomainModel> {
-    return this.#dataAccess
-      .getMenu()
-      .pipe(map((menu) => this.#buildMenu(menu)));
+    return this.#dataAccess.getMenu();
   }
 
   getOrderDiscount(): Observable<DiscountDomainModel> {
     return this.#dataAccess
       .getDiscount()
       .pipe(catchError(() => of({ discount: 0 })));
-  }
-
-  #buildMenu({ categories, dishes }: MenuResponse): MenuDomainModel {
-    const dishesByCategory = new Map<string, Dish[]>(
-      categories.map((category) => [category.id, []]),
-    );
-
-    for (const dish of dishes) {
-      dishesByCategory.get(dish.categoryId)?.push(dish);
-    }
-
-    return {
-      sections: categories.map((category) => ({
-        category,
-        dishes: dishesByCategory.get(category.id) ?? [],
-      })),
-    };
   }
 }

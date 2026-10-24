@@ -11,31 +11,16 @@ import { DomainService } from './domain.service';
 
 describe(DomainService.name, () => {
   describe('getMenu', () => {
-    it('should group dishes into sections in category order', async () => {
+    it('should return the menu from the data access service', async () => {
       const salads = { id: 'c-salads', name: 'Salads' };
-      const soups = { id: 'c-soups', name: 'Soups' };
-      const desserts = { id: 'c-desserts', name: 'Desserts' };
       const caesar = Arrange.createDish({
         id: 'd-caesar',
         categoryId: salads.id,
         name: 'Chicken Caesar',
       });
-      const greek = Arrange.createDish({
-        id: 'd-greek',
-        categoryId: salads.id,
-        name: 'Greek Salad',
-      });
-      const borscht = Arrange.createDish({
-        id: 'd-borscht',
-        categoryId: soups.id,
-        name: 'Borscht',
-      });
       const spies = Arrange.createSpies();
       spies.dataAccessServiceMock.getMenu.mockReturnValue(
-        of({
-          categories: [salads, soups, desserts],
-          dishes: [caesar, borscht, greek],
-        }),
+        of({ categories: [salads], dishes: [caesar] }),
       );
       const service = Arrange.setup(spies);
 
@@ -43,61 +28,7 @@ describe(DomainService.name, () => {
 
       expect(spies.dataAccessServiceMock.getMenu).toHaveBeenCalledTimes(1);
 
-      expect(response).toEqual({
-        sections: [
-          { category: salads, dishes: [caesar, greek] },
-          { category: soups, dishes: [borscht] },
-          { category: desserts, dishes: [] },
-        ],
-      });
-    });
-
-    it('should keep the API order of dishes within a section', async () => {
-      const salads = { id: 'c-salads', name: 'Salads' };
-      const caesar = Arrange.createDish({
-        id: 'd-caesar',
-        categoryId: salads.id,
-        name: 'Chicken Caesar',
-      });
-      const greek = Arrange.createDish({
-        id: 'd-greek',
-        categoryId: salads.id,
-        name: 'Greek Salad',
-      });
-      const spies = Arrange.createSpies();
-      spies.dataAccessServiceMock.getMenu.mockReturnValue(
-        of({ categories: [salads], dishes: [greek, caesar] }),
-      );
-      const service = Arrange.setup(spies);
-
-      const response = await firstValueFrom(service.getMenu());
-
-      expect(response.sections[0].dishes).toEqual([greek, caesar]);
-    });
-
-    it('should drop a dish whose category is missing from the menu', async () => {
-      const salads = { id: 'c-salads', name: 'Salads' };
-      const caesar = Arrange.createDish({
-        id: 'd-caesar',
-        categoryId: salads.id,
-        name: 'Chicken Caesar',
-      });
-      const borscht = Arrange.createDish({
-        id: 'd-borscht',
-        categoryId: 'c-soups',
-        name: 'Borscht',
-      });
-      const spies = Arrange.createSpies();
-      spies.dataAccessServiceMock.getMenu.mockReturnValue(
-        of({ categories: [salads], dishes: [caesar, borscht] }),
-      );
-      const service = Arrange.setup(spies);
-
-      const response = await firstValueFrom(service.getMenu());
-
-      expect(response).toEqual({
-        sections: [{ category: salads, dishes: [caesar] }],
-      });
+      expect(response).toEqual({ categories: [salads], dishes: [caesar] });
     });
   });
 
