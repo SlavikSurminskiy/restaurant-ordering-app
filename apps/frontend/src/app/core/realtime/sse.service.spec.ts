@@ -186,6 +186,24 @@ describe(SseService.name, () => {
     });
   });
 
+  describe('reconnect()', () => {
+    it('should close the open stream and open a new one', () => {
+      const service = Arrange.setup();
+      let opens = 0;
+      service.opened$.subscribe(() => opens++);
+      service.connect();
+      const first = Arrange.lastSource();
+      first.open();
+
+      service.reconnect();
+      Arrange.lastSource().open();
+
+      expect(first.close).toHaveBeenCalled();
+      expect(FakeEventSource.instances).toHaveLength(2);
+      expect(opens).toBe(2);
+    });
+  });
+
   describe('disconnect', () => {
     it('should close the source and stop reconnecting', () => {
       const service = Arrange.setup();
