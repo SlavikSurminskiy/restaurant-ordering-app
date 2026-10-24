@@ -1,0 +1,56 @@
+<section class="login">
+  <h1 class="login__title">Sign in</h1>
+
+  <form class="login__form" [formGroup]="form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input
+        matInput
+        type="email"
+        formControlName="email"
+        autocomplete="username"
+      />
+      @if (form.controls.email.hasError('required')) {
+        <mat-error>Enter your email.</mat-error>
+      } @else if (form.controls.email.hasError('email')) {
+        <mat-error>Enter a valid email.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Password</mat-label>
+      <input
+        matInput
+        type="password"
+        formControlName="password"
+        autocomplete="current-password"
+      />
+      @if (form.controls.password.hasError('required')) {
+        <mat-error>Enter your password.</mat-error>
+      }
+    </mat-form-field>
+
+    @if (error(); as message) {
+      <p class="login__error" role="alert">{{ message }}</p>
+    }
+
+    <button matButton="filled" type="submit" [disabled]="pending()">
+      {{ pending() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+
+  <aside class="login__demo" aria-labelledby="demo-accounts-title">
+    <h2 id="demo-accounts-title" class="login__demo-title">Demo accounts</h2>
+    <div class="login__demo-accounts">
+      @for (account of DEMO_ACCOUNTS; track account.email) {
+        <button
+          matButton="outlined"
+          type="button"
+          (click)="useDemoAccount(account)"
+        >
+          {{ account.label }}
+        </button>
+      }
+    </div>
+  </aside>
+</section>

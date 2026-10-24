@@ -71,6 +71,11 @@ export class SseService {
     });
   }
 
+  reconnect(): void {
+    this.disconnect();
+    this.connect();
+  }
+
   disconnect(): void {
     this.#connection?.unsubscribe();
     this.#connection = null;
