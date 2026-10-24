@@ -1,23 +1,28 @@
 import { Component, computed, input } from '@angular/core';
-import { httpResource } from '@angular/common/http';
+import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterOutlet } from '@angular/router';
-
-import { HealthResponse } from '@restaurant/shared-api-types';
 
 import { AppData } from '../app.resolver';
 import { MoneyPipe } from '../shared/ui/pipes/money.pipe';
 
+import { ConnectionIndicator } from './connection-indicator/connection-indicator';
+
 @Component({
   selector: 'app-shell',
-  imports: [MatToolbarModule, RouterOutlet, MoneyPipe],
+  imports: [
+    RouterOutlet,
+    MatIconModule,
+    MatToolbarModule,
+
+    MoneyPipe,
+    ConnectionIndicator,
+  ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
 export class Shell {
   readonly appData = input.required<AppData>();
-
-  protected readonly health = httpResource<HealthResponse>(() => '/api/health');
 
   protected readonly discount = computed(() => this.appData().discount);
 }

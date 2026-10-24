@@ -1,0 +1,28 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:host(.connection-indicator--degraded) {
+  color: var(--mat-sys-error);
+
+  .connection-indicator__description {
+    color: inherit;
+  }
+}
+
+.connection-indicator__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.connection-indicator__label {
+  font: var(--mat-sys-label-large);
+  font-weight: 600;
+}
+
+.connection-indicator__description {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

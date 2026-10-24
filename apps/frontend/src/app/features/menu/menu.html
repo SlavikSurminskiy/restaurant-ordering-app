@@ -14,7 +14,7 @@
   @case (LoadStatus.Error) {
     <div class="message" role="alert">
       <p>{{ store.error() }}</p>
-      <button matButton="filled" (click)="store.loadMenu()">Retry</button>
+      <p>We'll keep trying to load the menu automatically.</p>
     </div>
   }
   @case (LoadStatus.Loaded) {

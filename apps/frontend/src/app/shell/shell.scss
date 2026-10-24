@@ -5,16 +5,50 @@
 }
 
 .shell__toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: 'title discount connection';
+  align-items: center;
   gap: 16px;
+  height: auto;
+  min-height: 64px;
+  padding-block: 8px;
 }
 
-.shell__health {
-  margin-left: auto;
-  font: var(--mat-sys-label-medium);
+.shell__title {
+  grid-area: title;
 }
 
 .shell__discount {
-  font: var(--mat-sys-title-small);
+  grid-area: discount;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+  box-shadow: var(--mat-sys-level2);
+  font: var(--mat-sys-title-medium);
+  font-weight: 700;
+}
+
+.shell__connection {
+  grid-area: connection;
+  justify-self: end;
+}
+
+@media (max-width: 599px) {
+  .shell__toolbar {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'title connection'
+      'discount discount';
+  }
+
+  .shell__discount {
+    justify-content: center;
+  }
 }
 
 .shell__content {

@@ -4,7 +4,6 @@ import {
   ScrollingModule,
   CdkVirtualScrollViewport,
 } from '@angular/cdk/scrolling';
-import { MatButtonModule } from '@angular/material/button';
 import {
   MatButtonToggleChange,
   MatButtonToggleModule,
@@ -27,7 +26,6 @@ import { MenuStore } from './menu-store/menu.store';
   imports: [
     MatIconModule,
     MatInputModule,
-    MatButtonModule,
     ScrollingModule,
     MatFormFieldModule,
     MatButtonToggleModule,

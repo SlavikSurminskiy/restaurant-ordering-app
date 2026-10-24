@@ -1,6 +1,10 @@
 import { Test } from '@nestjs/testing';
 
-import { DishDeletedEvent, ServerEvent } from '@restaurant/shared-api-types';
+import {
+  ServerEvent,
+  MenuEventType,
+  DishDeletedEvent,
+} from '@restaurant/shared-api-types';
 
 import { EventBus } from './event-bus';
 
@@ -48,7 +52,7 @@ const Arrange = {
 
   createDishDeletedEvent(): DishDeletedEvent {
     return {
-      type: 'menu.dish.deleted',
+      type: MenuEventType.DishDeleted,
       dishId: '7d2f1c84-1e7b-4a59-8c39-2b6e9f0d4a21',
     };
   },
