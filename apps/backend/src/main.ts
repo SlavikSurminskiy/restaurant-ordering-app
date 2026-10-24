@@ -5,7 +5,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Open SSE streams keep sockets alive; without this, shutdown waits for them.
+  const app = await NestFactory.create(AppModule, {
+    forceCloseConnections: true,
+  });
+
   const globalPrefix = 'api';
 
   app.setGlobalPrefix(globalPrefix);
