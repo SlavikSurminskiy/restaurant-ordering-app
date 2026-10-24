@@ -1,0 +1,12 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--mat-sys-label-large);
+}

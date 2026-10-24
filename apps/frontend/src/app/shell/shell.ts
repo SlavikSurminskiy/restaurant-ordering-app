@@ -6,6 +6,7 @@ import { RouterOutlet } from '@angular/router';
 import { AppData } from '../app.resolver';
 import { MoneyPipe } from '../shared/ui/pipes/money.pipe';
 
+import { Account } from './account/account';
 import { ConnectionIndicator } from './connection-indicator/connection-indicator';
 
 @Component({
@@ -15,6 +16,7 @@ import { ConnectionIndicator } from './connection-indicator/connection-indicator
     MatIconModule,
     MatToolbarModule,
 
+    Account,
     MoneyPipe,
     ConnectionIndicator,
   ],
