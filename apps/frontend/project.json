@@ -70,7 +70,8 @@
     "test": {
       "executor": "@angular/build:unit-test",
       "options": {
-        "watch": false
+        "watch": false,
+        "runnerConfig": "apps/frontend/vitest-base.config.mts"
       }
     },
     "serve-static": {

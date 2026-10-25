@@ -1,4 +1,7 @@
 @if (store.user(); as user) {
+  @if (store.isAdmin()) {
+    <a matButton routerLink="/setup-menu">Setup menu</a>
+  }
   <span class="account__user">
     <mat-icon aria-hidden="true">account_circle</mat-icon>
     <span>{{ user.name }}</span>

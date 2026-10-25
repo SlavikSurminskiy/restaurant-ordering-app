@@ -1,0 +1,35 @@
+<header class="setup-menu__header">
+  <h1 class="setup-menu__title">Menu setup</h1>
+  <button matButton="filled" type="button" (click)="addCategory()">
+    <mat-icon>add</mat-icon>
+    New category
+  </button>
+</header>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading the menu" />
+} @else if (error(); as error) {
+  <div class="setup-menu__message">
+    <p role="alert">{{ error }}</p>
+    <button matButton="outlined" type="button" (click)="loadMenu()">
+      Try again
+    </button>
+  </div>
+} @else {
+  @for (section of store.sections(); track section.category.id) {
+    <app-menu-category
+      [category]="section.category"
+      [dishes]="section.dishes"
+      (editCategory)="editCategory(section.category)"
+      (deleteCategory)="deleteCategory(section.category)"
+      (addDish)="addDish(section.category)"
+      (editDish)="editDish($event)"
+      (deleteDish)="deleteDish($event)"
+      (availableChange)="setAvailable($event)"
+    />
+  } @empty {
+    <p class="setup-menu__empty">
+      No categories yet. Start with a new category.
+    </p>
+  }
+}

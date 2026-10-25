@@ -1,4 +1,4 @@
-import { signal, WritableSignal } from '@angular/core';
+import { computed, Signal, signal, WritableSignal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { render } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
@@ -30,6 +30,26 @@ describe(Account.name, () => {
       const { renderResult } = await Arrange.setup(spies);
 
       expect(renderResult.getByText('Admin')).toBeTruthy();
+    });
+
+    it('should link an admin to the menu setup', async () => {
+      const spies = Arrange.createSpies(Arrange.createUser());
+      const { renderResult } = await Arrange.setup(spies);
+
+      expect(
+        renderResult
+          .getByRole('link', { name: 'Setup menu' })
+          .getAttribute('href'),
+      ).toBe('/setup-menu');
+    });
+
+    it('should not offer the menu setup to a customer', async () => {
+      const spies = Arrange.createSpies(Arrange.createUser(UserRole.Customer));
+      const { renderResult } = await Arrange.setup(spies);
+
+      expect(
+        renderResult.queryByRole('link', { name: 'Setup menu' }),
+      ).toBeNull();
     });
 
     it('should log out on the server', async () => {
@@ -79,6 +99,7 @@ interface Spies {
   sseServiceMock: { reconnect: Mock };
   authStoreMock: {
     user: WritableSignal<AuthUserDomainModel | null>;
+    isAdmin: Signal<boolean>;
     clearUser: Mock;
   };
 }
@@ -106,6 +127,8 @@ const Arrange = {
   },
 
   createSpies(user: AuthUserDomainModel | null): Spies {
+    const userSignal = signal(user);
+
     return {
       authDomainServiceMock: {
         logout: vi.fn().mockReturnValue(of(undefined)),
@@ -114,18 +137,19 @@ const Arrange = {
         reconnect: vi.fn(),
       } satisfies Mocked<Pick<SseService, 'reconnect'>>,
       authStoreMock: {
-        user: signal(user),
+        user: userSignal,
+        isAdmin: computed(() => userSignal()?.role === UserRole.Admin),
         clearUser: vi.fn(),
       },
     };
   },
 
-  createUser(): AuthUserDomainModel {
+  createUser(role: UserRole = UserRole.Admin): AuthUserDomainModel {
     return {
       id: 'u-admin',
       email: 'admin@example.com',
       name: 'Admin',
-      role: UserRole.Admin,
+      role,
     };
   },
 };

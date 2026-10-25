@@ -1,7 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 
 import { AppData } from '../app.resolver';
 import { MoneyPipe } from '../shared/ui/pipes/money.pipe';
@@ -12,6 +12,7 @@ import { ConnectionIndicator } from './connection-indicator/connection-indicator
 @Component({
   selector: 'app-shell',
   imports: [
+    RouterLink,
     RouterOutlet,
     MatIconModule,
     MatToolbarModule,

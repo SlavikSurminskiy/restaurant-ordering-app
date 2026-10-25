@@ -1,0 +1,77 @@
+<header class="menu-category__header">
+  <h2 class="menu-category__name">{{ category().name }}</h2>
+
+  <button
+    matIconButton
+    type="button"
+    [attr.aria-label]="'Edit ' + category().name"
+    (click)="editCategory.emit()"
+  >
+    <mat-icon>edit</mat-icon>
+  </button>
+
+  <span [matTooltip]="dishes().length ? 'Delete or move its dishes first' : ''">
+    <button
+      matIconButton
+      type="button"
+      [attr.aria-label]="'Delete ' + category().name"
+      [disabled]="dishes().length > 0"
+      (click)="deleteCategory.emit()"
+    >
+      <mat-icon>delete</mat-icon>
+    </button>
+  </span>
+
+  <button
+    class="menu-category__add-dish"
+    matButton
+    type="button"
+    [attr.aria-label]="'New dish in ' + category().name"
+    (click)="addDish.emit()"
+  >
+    <mat-icon>add</mat-icon>
+    New dish
+  </button>
+</header>
+
+@for (dish of dishes(); track dish.id) {
+  <div class="menu-category__dish">
+    <span class="menu-category__dish-name">{{ dish.name }}</span>
+
+    <span class="menu-category__dish-price">
+      @if (dish.price === null) {
+        Open price
+      } @else {
+        {{ dish.price | money }}
+      }
+    </span>
+
+    <mat-slide-toggle
+      [checked]="dish.available"
+      [aria-label]="'Available: ' + dish.name"
+      (change)="toggleAvailable(dish, $event)"
+    >
+      Available
+    </mat-slide-toggle>
+
+    <button
+      matIconButton
+      type="button"
+      [attr.aria-label]="'Edit ' + dish.name"
+      (click)="editDish.emit(dish)"
+    >
+      <mat-icon>edit</mat-icon>
+    </button>
+
+    <button
+      matIconButton
+      type="button"
+      [attr.aria-label]="'Delete ' + dish.name"
+      (click)="deleteDish.emit(dish)"
+    >
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+} @empty {
+  <p class="menu-category__empty">No dishes yet.</p>
+}

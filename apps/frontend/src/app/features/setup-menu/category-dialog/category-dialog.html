@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>
+  {{ data.category ? 'Edit category' : 'New category' }}
+</h2>
+
+<form [formRoot]="form">
+  <mat-dialog-content class="category-form__fields">
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput [formField]="form.name" cdkFocusInitial />
+      <mat-error>Enter a name.</mat-error>
+    </mat-form-field>
+
+    @if (error(); as message) {
+      <p class="category-form__error" role="alert">{{ message }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close>Cancel</button>
+    <button
+      matButton="filled"
+      type="submit"
+      [disabled]="form().invalid() || form().submitting()"
+      [showProgress]="form().submitting()"
+    >
+      Save
+      <mat-progress-spinner
+        progressIndicator
+        diameter="20"
+        mode="indeterminate"
+        aria-label="Saving"
+      />
+    </button>
+  </mat-dialog-actions>
+</form>
