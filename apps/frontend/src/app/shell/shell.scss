@@ -17,6 +17,8 @@
 
 .shell__title {
   grid-area: title;
+  color: inherit;
+  text-decoration: none;
 }
 
 .shell__discount {
