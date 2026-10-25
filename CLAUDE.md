@@ -43,7 +43,7 @@ libs/database            @restaurant/database — Prisma schema/migrations, seed
 - **Backend wiring**: `ConfigModule` is global and reads `.env` if present; `DatabaseModule` is `@Global()` and exports `PrismaService` (extends `PrismaClient` with the `PrismaPg` driver adapter). `GET /api/health` returns `HealthResponse` from shared-api-types. `EventsModule` is `@Global()` and exports `EventBus` (in-memory RxJS); `GET /api/events` streams `ServerEvent` (shared-api-types) over SSE with a comment heartbeat — see `docs/architecture.md`.
 - **Frontend conventions**: standalone components, zoneless, signals; feature pages live in `src/app/features/<name>/` and are lazy-loaded from `app.routes.ts`. Material theme is defined in `src/styles.scss` with `mat.theme`. Tests use `@testing-library/angular` plus `HttpTestingController`.
 - **Generators**: `nx.json` sets defaults (scss, OnPush, vitest). Prefer `pnpm nx g ...` and `@nx/workspace:move` for renames; after a move, fix relative paths in the project's `vitest.config.mts` and `workspace:*` deps in apps' `package.json`, which the generator does not update.
-- **Planned, not implemented yet**: publishers of `order.*` events, `@angular-architects/ngrx-toolkit` (installed but unused).
+- **Planned, not implemented yet**: `@angular-architects/ngrx-toolkit` (installed but unused).
 
 ## Non-obvious constraints
 
