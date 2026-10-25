@@ -1,0 +1,20 @@
+.dish-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: min(480px, 80vw);
+  // Material caps dialog content at 65vh, which made this form scroll on most screens.
+  // The dialog itself is capped at 90vh (DishDialogOpenerService) and scrolls as a whole.
+  max-height: none;
+}
+
+.dish-form__error {
+  margin: 0;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-medium);
+}
+
+// Its 48px touch target sticks out 8px below the toggle; without room the content scrolls.
+.dish-form__available {
+  padding-bottom: 8px;
+}

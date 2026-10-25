@@ -1,0 +1,29 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.setup-menu__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.setup-menu__title {
+  margin: 0;
+  font: var(--mat-sys-headline-medium);
+}
+
+.setup-menu__empty,
+.setup-menu__message {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+.setup-menu__message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

@@ -1,0 +1,42 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-category__header,
+.menu-category__dish {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-category__name {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+}
+
+.menu-category__add-dish {
+  margin-left: auto;
+}
+
+.menu-category__dish {
+  padding: 4px 0 4px 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.menu-category__dish-name {
+  flex: 1;
+  font: var(--mat-sys-body-large);
+}
+
+.menu-category__dish-price {
+  min-width: 96px;
+  text-align: right;
+  font: var(--mat-sys-body-medium);
+}
+
+.menu-category__empty {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}

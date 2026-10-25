@@ -1,0 +1,67 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit dish' : 'New dish' }}</h2>
+
+<form class="dish-form" [formRoot]="form">
+  <mat-dialog-content class="dish-form__fields">
+    <mat-form-field appearance="outline">
+      <mat-label>Category</mat-label>
+      <mat-select [formField]="form.categoryId">
+        @for (category of store.categoryEntities(); track category.id) {
+          <mat-option [value]="category.id">{{ category.name }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>Choose a category.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput [formField]="form.name" />
+      <mat-error>Enter a name.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Description</mat-label>
+      <textarea matInput [formField]="form.description" rows="2"></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Photo URL</mat-label>
+      <input matInput [formField]="form.photoUrl" />
+    </mat-form-field>
+
+    <mat-checkbox [formField]="form.isOpenPrice">
+      Open price (the customer enters it)
+    </mat-checkbox>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Price, $</mat-label>
+      <input matInput type="number" step="0.01" [formField]="form.price" />
+      <mat-error>Enter a price from 0 to 10,000.</mat-error>
+    </mat-form-field>
+
+    <mat-slide-toggle class="dish-form__available" [formField]="form.available">
+      Available
+    </mat-slide-toggle>
+
+    @if (error(); as message) {
+      <p class="dish-form__error" role="alert">{{ message }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close>Cancel</button>
+    <button
+      matButton="filled"
+      type="submit"
+      [disabled]="form().invalid() || form().submitting()"
+      [showProgress]="form().submitting()"
+    >
+      Save
+      <mat-progress-spinner
+        progressIndicator
+        diameter="20"
+        mode="indeterminate"
+        aria-label="Saving"
+      />
+    </button>
+  </mat-dialog-actions>
+</form>
