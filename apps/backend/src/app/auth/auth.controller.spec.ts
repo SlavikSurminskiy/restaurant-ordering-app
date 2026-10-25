@@ -1,6 +1,5 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import type { Response } from 'express';
 import type { Mock } from 'vitest';
@@ -11,6 +10,7 @@ import { AuthUser, UserRole } from '@restaurant/shared-api-types';
 import { AUTH_COOKIE } from './auth.constants';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthCookieService } from './utils/auth-cookie.service';
 
 describe(AuthController.name, () => {
   describe('login', () => {
@@ -129,7 +129,7 @@ const Arrange = {
           useValue: new ConfigService({ JWT_TTL: '60' }),
         },
         // Needed by JwtAuthGuard on `me`; the guard itself isn't run here.
-        { provide: JwtService, useValue: {} },
+        { provide: AuthCookieService, useValue: {} },
       ],
     }).compile();
 

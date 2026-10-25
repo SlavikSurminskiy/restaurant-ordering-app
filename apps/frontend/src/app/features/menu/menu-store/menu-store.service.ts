@@ -24,6 +24,7 @@ import {
   MenuEventType,
   type Category,
   type Dish,
+  type MenuEvent,
   type ServerEvent,
 } from '@restaurant/shared-api-types';
 import {
@@ -38,6 +39,7 @@ import {
 import {
   dishConfig,
   categoryConfig,
+  MENU_EVENT_TYPES,
   SNAPSHOT_FALLBACK_DELAY_MS,
 } from './menu-store.constants';
 import { MenuUpdateKind } from './menu-store.enums';
@@ -72,7 +74,7 @@ export class MenuStoreService {
     );
   }
 
-  eventUpdater(event: ServerEvent): PartialStateUpdater<MenuEntitiesState> {
+  eventUpdater(event: MenuEvent): PartialStateUpdater<MenuEntitiesState> {
     switch (event.type) {
       case MenuEventType.CategoryUpserted:
         return setEntity(event.category, categoryConfig);
@@ -113,23 +115,32 @@ export class MenuStoreService {
       filter(({ kind }) => kind === MenuUpdateKind.Snapshot),
     );
 
-    const toUpdate = (event: ServerEvent): MenuUpdate => ({
+    const toUpdate = (event: MenuEvent): MenuUpdate => ({
       kind: MenuUpdateKind.Event,
       event,
     });
 
-    const bufferedEvents$ = this.#sseService.events$.pipe(
+    // The stream also carries order events; the menu needs only its own.
+    const menuEvents$ = this.#sseService.events$.pipe(
+      filter((event) => this.#isMenuEvent(event)),
+    );
+
+    const bufferedEvents$ = menuEvents$.pipe(
       buffer(isSnapshotLoaded$),
       take(1),
       mergeAll(),
       map(toUpdate),
     );
 
-    const liveEvents$ = this.#sseService.events$.pipe(
+    const liveEvents$ = menuEvents$.pipe(
       skipUntil(isSnapshotLoaded$),
       map(toUpdate),
     );
 
     return merge(snapshot$, bufferedEvents$, liveEvents$);
+  }
+
+  #isMenuEvent(event: ServerEvent): event is MenuEvent {
+    return MENU_EVENT_TYPES.includes(event.type);
   }
 }

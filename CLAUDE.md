@@ -13,7 +13,7 @@ pnpm start                   # docker Postgres → migrate deploy → seed → b
 
 pnpm build | pnpm test | pnpm lint      # run-many over all projects
 pnpm format | pnpm format:check
-pnpm nx <target> <project>              # projects: frontend, backend, database, shared-api-types
+pnpm nx <target> <project>              # projects: frontend, backend, database, shared-api-types, shared-utils
 
 pnpm db:generate | db:migrate | db:deploy | db:reset | db:seed | db:studio
 ```
@@ -34,6 +34,7 @@ Add `--skip-nx-cache` when you need a real re-run; Nx caches build/lint/test.
 apps/frontend            Angular SPA; /api is proxied to the backend (apps/frontend/proxy.conf.mjs)
 apps/backend             NestJS, global prefix /api
 libs/shared/api-types    @restaurant/shared-api-types — API contracts used by both apps
+libs/shared/utils        @restaurant/shared-utils — logic both apps share (e.g. `calculateTotals`)
 libs/database            @restaurant/database — Prisma schema/migrations, seed (`src/seed`), PrismaService (backend only)
 ```
 
@@ -42,7 +43,7 @@ libs/database            @restaurant/database — Prisma schema/migrations, seed
 - **Backend wiring**: `ConfigModule` is global and reads `.env` if present; `DatabaseModule` is `@Global()` and exports `PrismaService` (extends `PrismaClient` with the `PrismaPg` driver adapter). `GET /api/health` returns `HealthResponse` from shared-api-types. `EventsModule` is `@Global()` and exports `EventBus` (in-memory RxJS); `GET /api/events` streams `ServerEvent` (shared-api-types) over SSE with a comment heartbeat — see `docs/architecture.md`.
 - **Frontend conventions**: standalone components, zoneless, signals; feature pages live in `src/app/features/<name>/` and are lazy-loaded from `app.routes.ts`. Material theme is defined in `src/styles.scss` with `mat.theme`. Tests use `@testing-library/angular` plus `HttpTestingController`.
 - **Generators**: `nx.json` sets defaults (scss, OnPush, vitest). Prefer `pnpm nx g ...` and `@nx/workspace:move` for renames; after a move, fix relative paths in the project's `vitest.config.mts` and `workspace:*` deps in apps' `package.json`, which the generator does not update.
-- **Planned, not implemented yet**: publishers of `order.*` events, `@angular-architects/ngrx-toolkit` (installed but unused).
+- **Planned, not implemented yet**: `@angular-architects/ngrx-toolkit` (installed but unused).
 
 ## Non-obvious constraints
 

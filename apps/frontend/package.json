@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "@restaurant/shared-api-types": "workspace:*"
+    "@restaurant/shared-api-types": "workspace:*",
+    "@restaurant/shared-utils": "workspace:*"
   }
 }

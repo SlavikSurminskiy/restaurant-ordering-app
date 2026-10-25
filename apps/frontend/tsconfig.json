@@ -9,6 +9,7 @@
       "@restaurant/shared-api-types": [
         "../../libs/shared/api-types/src/index.ts"
       ],
+      "@restaurant/shared-utils": ["../../libs/shared/utils/src/index.ts"],
       "@restaurant/frontend/data-access/menu": [
         "./src/app/shared/data-access/menu/index.ts"
       ],

@@ -4,3 +4,4 @@ export * from './lib/events';
 export * from './lib/health';
 export * from './lib/menu';
 export * from './lib/money';
+export * from './lib/orders';

@@ -16,7 +16,7 @@ import {
   UpdateDishRequest,
 } from '@restaurant/shared-api-types';
 
-import { EventBus } from '../../events/event-bus';
+import { EventBus } from '../../events/event-bus/event-bus';
 import { DISH_SELECT } from '../menu.constants';
 
 @Injectable()

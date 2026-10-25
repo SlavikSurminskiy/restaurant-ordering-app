@@ -16,7 +16,7 @@ import {
   UpdateCategoryRequest,
 } from '@restaurant/shared-api-types';
 
-import { EventBus } from '../../events/event-bus';
+import { EventBus } from '../../events/event-bus/event-bus';
 import { CATEGORY_SELECT } from '../menu.constants';
 
 @Injectable()
