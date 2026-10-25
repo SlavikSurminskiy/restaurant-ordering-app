@@ -1,6 +1,6 @@
 import type { NamedEntityState } from '@ngrx/signals/entities';
 
-import type { Category, Dish, ServerEvent } from '@restaurant/shared-api-types';
+import type { Category, Dish, MenuEvent } from '@restaurant/shared-api-types';
 import { MenuDomainModel } from '@restaurant/frontend/domain/menu';
 
 import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
@@ -16,4 +16,4 @@ export type MenuEntitiesState = NamedEntityState<Category, 'category'> &
 export type MenuUpdate =
   | { kind: typeof MenuUpdateKind.Snapshot; menu: MenuDomainModel }
   | { kind: typeof MenuUpdateKind.SnapshotFailed; error: unknown }
-  | { kind: typeof MenuUpdateKind.Event; event: ServerEvent };
+  | { kind: typeof MenuUpdateKind.Event; event: MenuEvent };

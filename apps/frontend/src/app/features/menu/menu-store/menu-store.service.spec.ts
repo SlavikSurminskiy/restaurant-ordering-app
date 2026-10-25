@@ -4,10 +4,12 @@ import { defer, of, Subject, throwError } from 'rxjs';
 import type { Mock, Mocked } from 'vitest';
 
 import {
-  Category,
   Dish,
-  MenuEventType,
+  Order,
+  Category,
   ServerEvent,
+  MenuEventType,
+  OrderEventType,
 } from '@restaurant/shared-api-types';
 import {
   MenuDomainModel,
@@ -104,6 +106,23 @@ describe(MenuStoreService.name, () => {
         { kind: MenuUpdateKind.Snapshot, menu: Arrange.createMenu() },
         { kind: MenuUpdateKind.Event, event: duringLoad },
         { kind: MenuUpdateKind.Event, event: live },
+      ]);
+    });
+
+    it('should ignore order events', () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+      const received: MenuUpdate[] = [];
+      service.menuUpdates().subscribe((update) => received.push(update));
+      spies.sseServiceMock.opened$.next();
+
+      spies.sseServiceMock.events$.next({
+        type: OrderEventType.Updated,
+        order: {} as Order,
+      });
+
+      expect(received).toEqual([
+        { kind: MenuUpdateKind.Snapshot, menu: Arrange.createMenu() },
       ]);
     });
 

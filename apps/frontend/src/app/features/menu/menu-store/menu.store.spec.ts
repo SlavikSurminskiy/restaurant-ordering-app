@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import {
   Dish,
   Category,
-  ServerEvent,
+  MenuEvent,
   MenuEventType,
 } from '@restaurant/shared-api-types';
 import {
@@ -227,7 +227,7 @@ const Arrange = {
     };
   },
 
-  createEvent(event: ServerEvent): MenuUpdate {
+  createEvent(event: MenuEvent): MenuUpdate {
     return { kind: MenuUpdateKind.Event, event };
   },
 
