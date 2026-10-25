@@ -2,8 +2,8 @@ import { HttpStatusCode } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { catchError, Observable, of, throwError } from 'rxjs';
 
-import { ApiError } from '../../../core/http/api-error';
 import { AuthDataAccessService } from '../../data-access/auth/auth-data-access.service';
+import { ApiError } from '../../../core/http/api-error';
 
 import {
   AuthUserDomainModel,

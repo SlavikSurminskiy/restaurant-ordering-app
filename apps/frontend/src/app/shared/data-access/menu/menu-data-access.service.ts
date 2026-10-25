@@ -1,10 +1,10 @@
 import { inject, Service } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { DiscountResponse, MenuResponse } from './data-access.models';
+import { DiscountResponse, MenuResponse } from './menu-data-access.models';
 
 @Service()
-export class DataAccessService {
+export class MenuDataAccessService {
   #http = inject(HttpClient);
 
   getMenu() {

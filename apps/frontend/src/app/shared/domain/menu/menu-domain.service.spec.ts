@@ -3,13 +3,12 @@ import { firstValueFrom, of, throwError } from 'rxjs';
 import { Mock, Mocked, vi } from 'vitest';
 
 import { Dish } from '@restaurant/shared-api-types';
+import { MenuDataAccessService } from '../../data-access/menu/menu-data-access.service';
 
-import { DataAccessService } from '../data-access/data-access.service';
+import { DiscountDomainModel } from './menu-domain.models';
+import { MenuDomainService } from './menu-domain.service';
 
-import { DiscountDomainModel } from './domain.models';
-import { DomainService } from './domain.service';
-
-describe(DomainService.name, () => {
+describe(MenuDomainService.name, () => {
   describe('getMenu', () => {
     it('should return the menu from the data access service', async () => {
       const salads = { id: 'c-salads', name: 'Salads' };
@@ -19,14 +18,14 @@ describe(DomainService.name, () => {
         name: 'Chicken Caesar',
       });
       const spies = Arrange.createSpies();
-      spies.dataAccessServiceMock.getMenu.mockReturnValue(
+      spies.menuDataAccessServiceMock.getMenu.mockReturnValue(
         of({ categories: [salads], dishes: [caesar] }),
       );
       const service = Arrange.setup(spies);
 
       const response = await firstValueFrom(service.getMenu());
 
-      expect(spies.dataAccessServiceMock.getMenu).toHaveBeenCalledTimes(1);
+      expect(spies.menuDataAccessServiceMock.getMenu).toHaveBeenCalledTimes(1);
 
       expect(response).toEqual({ categories: [salads], dishes: [caesar] });
     });
@@ -39,21 +38,21 @@ describe(DomainService.name, () => {
 
       const response = await firstValueFrom(service.getOrderDiscount());
 
-      expect(spies.dataAccessServiceMock.getDiscount).toHaveBeenCalled();
+      expect(spies.menuDataAccessServiceMock.getDiscount).toHaveBeenCalled();
 
       expect(response).toEqual(Arrange.getMockedDiscount());
     });
 
     it('should return zero discount when getDiscount fails', async () => {
       const spies = Arrange.createSpies();
-      spies.dataAccessServiceMock.getDiscount.mockReturnValue(
+      spies.menuDataAccessServiceMock.getDiscount.mockReturnValue(
         throwError(() => new Error('offline')),
       );
       const service = Arrange.setup(spies);
 
       const response = await firstValueFrom(service.getOrderDiscount());
 
-      expect(spies.dataAccessServiceMock.getDiscount).toHaveBeenCalled();
+      expect(spies.menuDataAccessServiceMock.getDiscount).toHaveBeenCalled();
 
       expect(response).toEqual({ discount: 0 });
     });
@@ -61,7 +60,7 @@ describe(DomainService.name, () => {
 });
 
 interface Spies {
-  dataAccessServiceMock: {
+  menuDataAccessServiceMock: {
     getMenu: Mock;
     getDiscount: Mock;
   };
@@ -72,21 +71,23 @@ const Arrange = {
     TestBed.configureTestingModule({
       providers: [
         {
-          provide: DataAccessService,
-          useValue: spies.dataAccessServiceMock,
+          provide: MenuDataAccessService,
+          useValue: spies.menuDataAccessServiceMock,
         },
       ],
     });
 
-    return TestBed.inject(DomainService);
+    return TestBed.inject(MenuDomainService);
   },
 
   createSpies(): Spies {
     return {
-      dataAccessServiceMock: {
+      menuDataAccessServiceMock: {
         getMenu: vi.fn().mockReturnValue(of({ categories: [], dishes: [] })),
         getDiscount: vi.fn().mockReturnValue(of(Arrange.getMockedDiscount())),
-      } satisfies Mocked<Pick<DataAccessService, 'getMenu' | 'getDiscount'>>,
+      } satisfies Mocked<
+        Pick<MenuDataAccessService, 'getMenu' | 'getDiscount'>
+      >,
     };
   },
 

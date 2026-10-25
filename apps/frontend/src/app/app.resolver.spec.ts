@@ -3,17 +3,18 @@ import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import type { Mocked } from 'vitest';
 
-import { DiscountDomainModel } from './shared/domain/domain.models';
-import { DomainService } from './shared/domain/domain.service';
+import { DiscountDomainModel } from './shared/domain/menu/menu-domain.models';
+import { MenuDomainService } from './shared/domain/menu/menu-domain.service';
+
 import { AppData, appResolver } from './app.resolver';
 
 describe('appResolver', () => {
   it('should resolve the order discount from the domain service', async () => {
-    const { resolve, domainServiceMock } = Arrange.setup();
+    const { resolve, menuDomainServiceMock } = Arrange.setup();
 
     const appData = await resolve();
 
-    expect(domainServiceMock.getOrderDiscount).toHaveBeenCalled();
+    expect(menuDomainServiceMock.getOrderDiscount).toHaveBeenCalled();
 
     expect(appData).toEqual({ discount: 500 });
   });
@@ -21,18 +22,20 @@ describe('appResolver', () => {
 
 const Arrange = {
   setup() {
-    const domainServiceMock = {
+    const menuDomainServiceMock = {
       getOrderDiscount: vi
         .fn()
         .mockReturnValue(of(Arrange.getMockedDiscount())),
-    } satisfies Mocked<Pick<DomainService, 'getOrderDiscount'>>;
+    } satisfies Mocked<Pick<MenuDomainService, 'getOrderDiscount'>>;
 
     TestBed.configureTestingModule({
-      providers: [{ provide: DomainService, useValue: domainServiceMock }],
+      providers: [
+        { provide: MenuDomainService, useValue: menuDomainServiceMock },
+      ],
     });
 
     return {
-      domainServiceMock,
+      menuDomainServiceMock,
       resolve(): Promise<AppData> {
         const result = TestBed.runInInjectionContext(() =>
           appResolver({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),

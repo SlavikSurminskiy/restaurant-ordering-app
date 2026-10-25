@@ -5,9 +5,8 @@ import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
 import { UserRole } from '@restaurant/shared-api-types';
-
-import { ApiError } from '../../../core/http/api-error';
 import { AuthDataAccessService } from '../../data-access/auth/auth-data-access.service';
+import { ApiError } from '../../../core/http/api-error';
 
 import { AuthUserDomainModel } from './auth-domain.models';
 import { AuthDomainService } from './auth-domain.service';

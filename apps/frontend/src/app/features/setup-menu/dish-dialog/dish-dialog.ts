@@ -23,8 +23,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { firstValueFrom } from 'rxjs';
 
-import { errorMessage } from '../../../core/http/api-error';
 import { MenuAdminDomainService } from '../../../shared/domain/menu-admin/menu-admin-domain.service';
+import { errorMessage } from '../../../core/http/api-error';
+
 import { MAX_PRICE_DOLLARS, NOT_BLANK } from '../setup-menu.constants';
 import { SetupMenuStore } from '../setup-menu-store/setup-menu.store';
 

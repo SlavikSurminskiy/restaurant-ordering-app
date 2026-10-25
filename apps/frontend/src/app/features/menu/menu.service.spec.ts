@@ -2,8 +2,7 @@ import { describe } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 
 import { Dish } from '@restaurant/shared-api-types';
-
-import { MenuSectionDomainModel } from '../../shared/domain/domain.models';
+import { MenuSectionDomainModel } from '../../shared/domain/menu/menu-domain.models';
 
 import { MenuRow, MenuRowKind } from './menu.models';
 import { MenuService } from './menu.service';

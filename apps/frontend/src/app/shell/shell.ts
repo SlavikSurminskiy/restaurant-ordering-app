@@ -3,8 +3,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterOutlet } from '@angular/router';
 
-import { AppData } from '../app.resolver';
 import { MoneyPipe } from '../shared/ui/pipes/money.pipe';
+
+import { AppData } from '../app.resolver';
 
 import { Account } from './account/account';
 import { ConnectionIndicator } from './connection-indicator/connection-indicator';

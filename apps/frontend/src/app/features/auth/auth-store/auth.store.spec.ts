@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
 import { UserRole } from '@restaurant/shared-api-types';
-
 import { AuthUserDomainModel } from '../../../shared/domain/auth/auth-domain.models';
 
 import { AuthStore } from './auth.store';

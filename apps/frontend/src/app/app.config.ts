@@ -6,8 +6,9 @@ import {
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 
-import { appRoutes } from './app.routes';
 import { apiErrorInterceptor } from './core/http/api-error.interceptor';
+
+import { appRoutes } from './app.routes';
 import { restoreSession } from './features/auth/restore-session';
 
 export const appConfig: ApplicationConfig = {

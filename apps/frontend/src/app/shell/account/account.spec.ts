@@ -7,11 +7,11 @@ import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
 import { UserRole } from '@restaurant/shared-api-types';
-
-import { SseService } from '../../core/realtime/sse.service';
-import { AuthStore } from '../../features/auth/auth-store/auth.store';
 import { AuthUserDomainModel } from '../../shared/domain/auth/auth-domain.models';
 import { AuthDomainService } from '../../shared/domain/auth/auth-domain.service';
+import { SseService } from '../../core/realtime/sse.service';
+
+import { AuthStore } from '../../features/auth/auth-store/auth.store';
 
 import { Account } from './account';
 

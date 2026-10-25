@@ -4,9 +4,8 @@ import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
 import { UserRole } from '@restaurant/shared-api-types';
-
-import { ApiError } from '../../core/http/api-error';
 import { AuthDomainService } from '../../shared/domain/auth/auth-domain.service';
+import { ApiError } from '../../core/http/api-error';
 
 import { AuthStore } from './auth-store/auth.store';
 import { restoreSession } from './restore-session';

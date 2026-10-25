@@ -26,11 +26,10 @@ import {
   type Dish,
   type ServerEvent,
 } from '@restaurant/shared-api-types';
-
+import { MenuDomainService } from '../../../shared/domain/menu/menu-domain.service';
+import { MenuSectionDomainModel } from '../../../shared/domain/menu/menu-domain.models';
 import { SseService } from '../../../core/realtime/sse.service';
 import { retryWithBackoff } from '../../../core/realtime/utils/retry-with-backoff';
-import { MenuSectionDomainModel } from '../../../shared/domain/domain.models';
-import { DomainService } from '../../../shared/domain/domain.service';
 
 import {
   dishConfig,
@@ -42,7 +41,7 @@ import { MenuEntitiesState, MenuUpdate } from './menu-store.models';
 
 @Service()
 export class MenuStoreService {
-  readonly #domainService = inject(DomainService);
+  readonly #menuDomainService = inject(MenuDomainService);
   readonly #sseService = inject(SseService);
 
   buildSections(
@@ -94,7 +93,7 @@ export class MenuStoreService {
   }
 
   #snapshotThenEvents(): Observable<MenuUpdate> {
-    const snapshot$ = this.#domainService.getMenu().pipe(
+    const snapshot$ = this.#menuDomainService.getMenu().pipe(
       map((menu): MenuUpdate => ({ kind: MenuUpdateKind.Snapshot, menu })),
       catchError((error: unknown) =>
         concat(

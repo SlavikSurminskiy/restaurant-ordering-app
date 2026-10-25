@@ -2,8 +2,9 @@ import { provideRouter } from '@angular/router';
 import { render } from '@testing-library/angular';
 import type { Mock } from 'vitest';
 
-import { App } from './app';
 import { SseService } from './core/realtime/sse.service';
+
+import { App } from './app';
 import { MenuStore } from './features/menu/menu-store/menu.store';
 
 describe(App.name, () => {

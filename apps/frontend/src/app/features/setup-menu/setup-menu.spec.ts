@@ -5,11 +5,11 @@ import { NEVER, of, throwError } from 'rxjs';
 import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
-import { ApiError } from '../../core/http/api-error';
-import { MenuDomainModel } from '../../shared/domain/domain.models';
-import { DomainService } from '../../shared/domain/domain.service';
+import { MenuDomainModel } from '../../shared/domain/menu/menu-domain.models';
+import { MenuDomainService } from '../../shared/domain/menu/menu-domain.service';
 import { DishDomainModel } from '../../shared/domain/menu-admin/menu-admin-domain.models';
 import { MenuAdminDomainService } from '../../shared/domain/menu-admin/menu-admin-domain.service';
+import { ApiError } from '../../core/http/api-error';
 
 import { SetupMenu } from './setup-menu';
 
@@ -17,7 +17,7 @@ describe(SetupMenu.name, () => {
   describe('loading', () => {
     it('should show a progress bar while the menu loads', async () => {
       const spies = Arrange.createSpies();
-      spies.domainServiceMock.getMenu.mockReturnValue(NEVER);
+      spies.menuDomainServiceMock.getMenu.mockReturnValue(NEVER);
       const { renderResult } = await Arrange.setup(spies);
 
       expect(renderResult.getByRole('progressbar')).toBeTruthy();
@@ -25,7 +25,7 @@ describe(SetupMenu.name, () => {
 
     it('should explain when the menu fails to load', async () => {
       const spies = Arrange.createSpies();
-      spies.domainServiceMock.getMenu.mockReturnValue(
+      spies.menuDomainServiceMock.getMenu.mockReturnValue(
         throwError(() => Arrange.createApiError()),
       );
       const { renderResult } = await Arrange.setup(spies);
@@ -38,14 +38,14 @@ describe(SetupMenu.name, () => {
     it('should load the menu again on request', async () => {
       const user = Arrange.setupUser();
       const spies = Arrange.createSpies();
-      spies.domainServiceMock.getMenu.mockReturnValueOnce(
+      spies.menuDomainServiceMock.getMenu.mockReturnValueOnce(
         throwError(() => Arrange.createApiError()),
       );
       const { renderResult } = await Arrange.setup(spies);
 
       await user.click(renderResult.getByRole('button', { name: 'Try again' }));
 
-      expect(spies.domainServiceMock.getMenu).toHaveBeenCalledTimes(2);
+      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
       expect(renderResult.getByRole('region', { name: 'Salads' })).toBeTruthy();
     });
   });
@@ -63,7 +63,7 @@ describe(SetupMenu.name, () => {
 
   it('should invite to start with a category when the menu is empty', async () => {
     const spies = Arrange.createSpies();
-    spies.domainServiceMock.getMenu.mockReturnValue(
+    spies.menuDomainServiceMock.getMenu.mockReturnValue(
       of({ categories: [], dishes: [] }),
     );
     const { renderResult } = await Arrange.setup(spies);
@@ -220,7 +220,7 @@ describe(SetupMenu.name, () => {
 });
 
 interface Spies {
-  domainServiceMock: { getMenu: Mock };
+  menuDomainServiceMock: { getMenu: Mock };
   menuAdminDomainServiceMock: {
     updateDish: Mock;
     deleteDish: Mock;
@@ -230,12 +230,12 @@ interface Spies {
 
 const Arrange = {
   async setup(spies?: Spies) {
-    const { domainServiceMock, menuAdminDomainServiceMock } =
+    const { menuDomainServiceMock, menuAdminDomainServiceMock } =
       spies ?? Arrange.createSpies();
 
     const renderResult = await render(SetupMenu, {
       providers: [
-        { provide: DomainService, useValue: domainServiceMock },
+        { provide: MenuDomainService, useValue: menuDomainServiceMock },
         {
           provide: MenuAdminDomainService,
           useValue: menuAdminDomainServiceMock,
@@ -252,9 +252,9 @@ const Arrange = {
 
   createSpies(): Spies {
     return {
-      domainServiceMock: {
+      menuDomainServiceMock: {
         getMenu: vi.fn().mockReturnValue(of(Arrange.createMenu())),
-      } satisfies Mocked<Pick<DomainService, 'getMenu'>>,
+      } satisfies Mocked<Pick<MenuDomainService, 'getMenu'>>,
       menuAdminDomainServiceMock: {
         updateDish: vi
           .fn()

@@ -3,7 +3,6 @@ import { NgOptimizedImage } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 
 import { Dish } from '@restaurant/shared-api-types';
-
 import { formatMoney } from '../../../shared/ui/pipes/money.pipe';
 
 @Component({

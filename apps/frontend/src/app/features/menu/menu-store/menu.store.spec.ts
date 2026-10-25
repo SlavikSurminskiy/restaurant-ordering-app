@@ -9,11 +9,10 @@ import {
   ServerEvent,
   MenuEventType,
 } from '@restaurant/shared-api-types';
-
+import { MenuDomainModel } from '../../../shared/domain/menu/menu-domain.models';
+import { MenuDomainService } from '../../../shared/domain/menu/menu-domain.service';
 import { ApiError } from '../../../core/http/api-error';
 import { SseService } from '../../../core/realtime/sse.service';
-import { MenuDomainModel } from '../../../shared/domain/domain.models';
-import { DomainService } from '../../../shared/domain/domain.service';
 
 import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
 import { MenuUpdate } from './menu-store.models';
@@ -196,7 +195,7 @@ const Arrange = {
   setup(spies: Spies) {
     TestBed.configureTestingModule({
       providers: [
-        { provide: DomainService, useValue: {} },
+        { provide: MenuDomainService, useValue: {} },
         { provide: SseService, useValue: {} },
       ],
     });

@@ -7,10 +7,11 @@ import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
 import {
-  CategoryDomainModel,
   DishDomainModel,
+  CategoryDomainModel,
 } from '../../../shared/domain/menu-admin/menu-admin-domain.models';
 import { MenuAdminDomainService } from '../../../shared/domain/menu-admin/menu-admin-domain.service';
+
 import { SetupMenuStore } from '../setup-menu-store/setup-menu.store';
 
 import { DishDialog } from './dish-dialog';
