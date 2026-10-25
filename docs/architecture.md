@@ -50,7 +50,7 @@ The frontend cannot import `@restaurant/database`: lint fails if it does. Prisma
 - Event payloads are the `ServerEvent` union in `libs/shared/api-types/src/lib/events.ts`, discriminated by `type`; the type names live in the `MenuEventType` enum (`menu.category.upserted`, `menu.dish.deleted`, …), so code never spells them as strings. Each is sent as the `data` of a default `message` event, so the client needs one `onmessage` handler. `*.upserted` events carry the full entity, not a diff.
 - Every 20 s the stream sends an SSE comment (`: heartbeat`), which `EventSource` ignores. It keeps idle connections from being dropped by proxies; the Angular dev proxy passes the stream through without buffering.
 - On shutdown `EventBus` completes, which ends open streams, and the backend is created with `forceCloseConnections`, so `app.close()` doesn't wait for keep-alive sockets of connected clients.
-- `menu.*` events are published by the admin menu endpoints (`apps/backend/src/app/menu/categories/`, `dishes/`); `order.*` events come with orders.
+- `menu.*` events are published by the admin menu endpoints (`apps/backend/src/app/menu/categories/`, `dishes/`) and go to every client. `order.*` events are published by `apps/backend/src/app/orders/` and go only to the order's owner and to admins. `EventsService` does this filtering with a `switch` over every event type, so a new type does not compile until it is handled; the stream reads the auth cookie once on connect, which is why clients reconnect after login and logout.
 
 ## Environment variables
 

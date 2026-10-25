@@ -8,8 +8,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { AuthCookieService } from './utils/auth-cookie.service';
 
-/** Global, so any controller can use `JwtAuthGuard` and `RolesGuard`. */
 @Global()
 @Module({
   imports: [
@@ -26,7 +26,7 @@ import { RolesGuard } from './guards/roles.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, RolesGuard],
-  exports: [JwtModule, JwtAuthGuard, RolesGuard],
+  providers: [AuthService, JwtAuthGuard, RolesGuard, AuthCookieService],
+  exports: [JwtAuthGuard, RolesGuard, AuthCookieService],
 })
 export class AuthModule {}
