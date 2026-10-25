@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 
 import { UserRole } from '@restaurant/shared-api-types';
 import { AuthDataAccessService } from '@restaurant/frontend/data-access/auth';
-import { ApiError } from '../../../core/http/api-error';
+import { ApiError } from '@restaurant/frontend/core/http';
 
 import { AuthUserDomainModel } from './auth-domain.models';
 import { AuthDomainService } from './auth-domain.service';

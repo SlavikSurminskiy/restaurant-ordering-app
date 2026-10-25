@@ -30,8 +30,10 @@ import {
   MenuDomainService,
   MenuSectionDomainModel,
 } from '@restaurant/frontend/domain/menu';
-import { SseService } from '../../../core/realtime/sse.service';
-import { retryWithBackoff } from '../../../core/realtime/utils/retry-with-backoff';
+import {
+  SseService,
+  retryWithBackoff,
+} from '@restaurant/frontend/core/realtime';
 
 import {
   dishConfig,

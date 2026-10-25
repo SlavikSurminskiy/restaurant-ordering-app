@@ -13,8 +13,8 @@ import {
   MenuDomainModel,
   MenuDomainService,
 } from '@restaurant/frontend/domain/menu';
-import { ApiError } from '../../../core/http/api-error';
-import { SseService } from '../../../core/realtime/sse.service';
+import { ApiError } from '@restaurant/frontend/core/http';
+import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
 import { MenuUpdate } from './menu-store.models';

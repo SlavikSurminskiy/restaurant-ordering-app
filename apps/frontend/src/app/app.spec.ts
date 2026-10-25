@@ -2,7 +2,7 @@ import { provideRouter } from '@angular/router';
 import { render } from '@testing-library/angular';
 import type { Mock } from 'vitest';
 
-import { SseService } from './core/realtime/sse.service';
+import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { App } from './app';
 import { MenuStore } from './features/menu/menu-store/menu.store';

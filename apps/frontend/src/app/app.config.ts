@@ -6,7 +6,7 @@ import {
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 
-import { apiErrorInterceptor } from './core/http/api-error.interceptor';
+import { apiErrorInterceptor } from '@restaurant/frontend/core/http';
 
 import { appRoutes } from './app.routes';
 import { restoreSession } from './features/auth/restore-session';

@@ -11,8 +11,8 @@ import {
   AuthUserDomainModel,
   AuthDomainService,
 } from '@restaurant/frontend/domain/auth';
-import { ApiError } from '../../../core/http/api-error';
-import { SseService } from '../../../core/realtime/sse.service';
+import { ApiError } from '@restaurant/frontend/core/http';
+import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { AuthStore } from '../auth-store/auth.store';
 

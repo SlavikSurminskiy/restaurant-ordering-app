@@ -12,7 +12,7 @@ import {
   MenuAdminDomainService,
 } from '@restaurant/frontend/domain/menu-admin';
 import { ConfirmDialogOpenerService } from '@restaurant/frontend/ui';
-import { errorMessage } from '../../core/http/api-error';
+import { errorMessage } from '@restaurant/frontend/core/http';
 
 import { CategoryDialogOpenerService } from './category-dialog/category-dialog-opener.service';
 import { DishDialogOpenerService } from './dish-dialog/dish-dialog-opener.service';

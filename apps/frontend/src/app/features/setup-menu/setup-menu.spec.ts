@@ -13,7 +13,7 @@ import {
   DishDomainModel,
   MenuAdminDomainService,
 } from '@restaurant/frontend/domain/menu-admin';
-import { ApiError } from '../../core/http/api-error';
+import { ApiError } from '@restaurant/frontend/core/http';
 
 import { SetupMenu } from './setup-menu';
 

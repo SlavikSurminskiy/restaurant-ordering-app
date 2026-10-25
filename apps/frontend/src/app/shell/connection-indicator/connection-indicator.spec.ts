@@ -1,8 +1,10 @@
 import { signal, WritableSignal } from '@angular/core';
 import { render } from '@testing-library/angular';
 
-import { SseConnectionStatus } from '../../core/realtime/sse-connection-status/sse-connection-status.enums';
-import { SseConnectionStatusService } from '../../core/realtime/sse-connection-status/sse-connection-status.service';
+import {
+  SseConnectionStatus,
+  SseConnectionStatusService,
+} from '@restaurant/frontend/core/realtime';
 
 import { ConnectionIndicator } from './connection-indicator';
 

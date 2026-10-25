@@ -24,7 +24,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { firstValueFrom } from 'rxjs';
 
 import { MenuAdminDomainService } from '@restaurant/frontend/domain/menu-admin';
-import { errorMessage } from '../../../core/http/api-error';
+import { errorMessage } from '@restaurant/frontend/core/http';
 
 import { MAX_PRICE_DOLLARS, NOT_BLANK } from '../setup-menu.constants';
 import { SetupMenuStore } from '../setup-menu-store/setup-menu.store';

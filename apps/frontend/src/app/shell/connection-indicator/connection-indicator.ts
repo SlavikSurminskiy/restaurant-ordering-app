@@ -1,7 +1,7 @@
 import { computed, Component, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
-import { SseConnectionStatusService } from '../../core/realtime/sse-connection-status/sse-connection-status.service';
+import { SseConnectionStatusService } from '@restaurant/frontend/core/realtime';
 
 import { STATUS_VIEW } from './connection-indicator.constants';
 

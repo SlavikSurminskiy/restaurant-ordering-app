@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 import { UserRole } from '@restaurant/shared-api-types';
 import { AuthDomainService } from '@restaurant/frontend/domain/auth';
-import { ApiError } from '../../core/http/api-error';
+import { ApiError } from '@restaurant/frontend/core/http';
 
 import { AuthStore } from './auth-store/auth.store';
 import { restoreSession } from './restore-session';

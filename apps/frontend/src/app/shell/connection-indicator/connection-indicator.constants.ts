@@ -1,4 +1,4 @@
-import { SseConnectionStatus } from '../../core/realtime/sse-connection-status/sse-connection-status.enums';
+import { SseConnectionStatus } from '@restaurant/frontend/core/realtime';
 
 import { StatusView } from './connection-indicator.models';
 

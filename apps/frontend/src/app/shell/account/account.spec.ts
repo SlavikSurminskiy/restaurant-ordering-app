@@ -11,7 +11,7 @@ import {
   AuthUserDomainModel,
   AuthDomainService,
 } from '@restaurant/frontend/domain/auth';
-import { SseService } from '../../core/realtime/sse.service';
+import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { AuthStore } from '../../features/auth/auth-store/auth.store';
 

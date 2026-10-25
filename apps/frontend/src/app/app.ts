@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
-import { SseService } from './core/realtime/sse.service';
+import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { MenuStore } from './features/menu/menu-store/menu.store';
 

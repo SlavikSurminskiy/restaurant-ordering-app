@@ -13,9 +13,11 @@ import {
   MenuDomainModel,
   MenuDomainService,
 } from '@restaurant/frontend/domain/menu';
-import { ApiError } from '../../../core/http/api-error';
-import { SseService } from '../../../core/realtime/sse.service';
-import { BACKOFF_BASE_DELAY_MS } from '../../../core/realtime/utils/backoff-delay';
+import { ApiError } from '@restaurant/frontend/core/http';
+import {
+  SseService,
+  BACKOFF_BASE_DELAY_MS,
+} from '@restaurant/frontend/core/realtime';
 
 import { SNAPSHOT_FALLBACK_DELAY_MS } from './menu-store.constants';
 import { MenuUpdateKind } from './menu-store.enums';

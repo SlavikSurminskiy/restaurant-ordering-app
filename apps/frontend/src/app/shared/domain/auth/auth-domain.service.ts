@@ -3,7 +3,7 @@ import { inject, Service } from '@angular/core';
 import { catchError, Observable, of, throwError } from 'rxjs';
 
 import { AuthDataAccessService } from '@restaurant/frontend/data-access/auth';
-import { ApiError } from '../../../core/http/api-error';
+import { ApiError } from '@restaurant/frontend/core/http';
 
 import {
   AuthUserDomainModel,
