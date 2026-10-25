@@ -3,7 +3,7 @@ import { Service } from '@angular/core';
 import {
   DishDomainModel,
   CategoryDomainModel,
-} from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+} from '@restaurant/frontend/domain/menu-admin';
 
 import { SetupMenuSection } from './setup-menu-store.models';
 

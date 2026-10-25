@@ -5,14 +5,14 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { filter, switchMap } from 'rxjs';
 
-import { errorMessage } from '../../core/http/api-error';
-import { DomainService } from '../../shared/domain/domain.service';
+import { MenuDomainService } from '@restaurant/frontend/domain/menu';
 import {
   DishDomainModel,
   CategoryDomainModel,
-} from '../../shared/domain/menu-admin/menu-admin-domain.models';
-import { MenuAdminDomainService } from '../../shared/domain/menu-admin/menu-admin-domain.service';
-import { ConfirmDialogOpenerService } from '../../shared/ui/components/confirm-dialog/confirm-dialog-opener.service';
+  MenuAdminDomainService,
+} from '@restaurant/frontend/domain/menu-admin';
+import { ConfirmDialogOpenerService } from '@restaurant/frontend/ui';
+import { errorMessage } from '@restaurant/frontend/core/http';
 
 import { CategoryDialogOpenerService } from './category-dialog/category-dialog-opener.service';
 import { DishDialogOpenerService } from './dish-dialog/dish-dialog-opener.service';
@@ -40,7 +40,7 @@ export class SetupMenu {
   readonly #confirmDialogOpener = inject(ConfirmDialogOpenerService);
   readonly #categoryDialogOpener = inject(CategoryDialogOpenerService);
   readonly #dishDialogOpener = inject(DishDialogOpenerService);
-  readonly #domainService = inject(DomainService);
+  readonly #menuDomainService = inject(MenuDomainService);
   readonly #menuAdminDomainService = inject(MenuAdminDomainService);
 
   protected readonly store = inject(SetupMenuStore);
@@ -56,7 +56,7 @@ export class SetupMenu {
     this.loading.set(true);
     this.error.set(null);
 
-    this.#domainService.getMenu().subscribe({
+    this.#menuDomainService.getMenu().subscribe({
       next: (menu) => {
         this.store.setMenu(menu);
         this.loading.set(false);

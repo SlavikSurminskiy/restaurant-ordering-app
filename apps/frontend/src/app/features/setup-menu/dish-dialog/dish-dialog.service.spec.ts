@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { DishDomainModel } from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { DishDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 import { DishDialogMode, DishFormValue } from './dish-dialog.models';
 import { DishDialogService } from './dish-dialog.service';

@@ -1,8 +1,7 @@
 import type { NamedEntityState } from '@ngrx/signals/entities';
 
 import type { Category, Dish, ServerEvent } from '@restaurant/shared-api-types';
-
-import { MenuDomainModel } from '../../../shared/domain/domain.models';
+import { MenuDomainModel } from '@restaurant/frontend/domain/menu';
 
 import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
 

@@ -1,8 +1,7 @@
 import { Service } from '@angular/core';
 
 import { Dish } from '@restaurant/shared-api-types';
-
-import { MenuSectionDomainModel } from '../../shared/domain/domain.models';
+import { MenuSectionDomainModel } from '@restaurant/frontend/domain/menu';
 
 import { MenuRow, MenuRowKind } from './menu.models';
 

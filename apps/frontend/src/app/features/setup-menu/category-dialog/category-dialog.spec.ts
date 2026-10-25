@@ -5,8 +5,11 @@ import { NEVER, of, throwError } from 'rxjs';
 import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
-import { CategoryDomainModel } from '../../../shared/domain/menu-admin/menu-admin-domain.models';
-import { MenuAdminDomainService } from '../../../shared/domain/menu-admin/menu-admin-domain.service';
+import {
+  CategoryDomainModel,
+  MenuAdminDomainService,
+} from '@restaurant/frontend/domain/menu-admin';
+
 import { SetupMenuStore } from '../setup-menu-store/setup-menu.store';
 
 import { CategoryDialog } from './category-dialog';

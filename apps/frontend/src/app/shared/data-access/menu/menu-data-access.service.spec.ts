@@ -5,10 +5,10 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 
-import { DiscountResponse, MenuResponse } from './data-access.models';
-import { DataAccessService } from './data-access.service';
+import { DiscountResponse, MenuResponse } from './menu-data-access.models';
+import { MenuDataAccessService } from './menu-data-access.service';
 
-describe(DataAccessService.name, () => {
+describe(MenuDataAccessService.name, () => {
   it('getMenu should call http.get with correct URL', () => {
     const { service, httpMock } = Arrange.setup();
     const next = vi.fn();
@@ -45,7 +45,7 @@ const Arrange = {
     });
 
     return {
-      service: TestBed.inject(DataAccessService),
+      service: TestBed.inject(MenuDataAccessService),
       httpMock: TestBed.inject(HttpTestingController),
     };
   },

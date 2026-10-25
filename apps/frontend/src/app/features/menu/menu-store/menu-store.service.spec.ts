@@ -9,12 +9,15 @@ import {
   MenuEventType,
   ServerEvent,
 } from '@restaurant/shared-api-types';
-
-import { ApiError } from '../../../core/http/api-error';
-import { SseService } from '../../../core/realtime/sse.service';
-import { BACKOFF_BASE_DELAY_MS } from '../../../core/realtime/utils/backoff-delay';
-import { MenuDomainModel } from '../../../shared/domain/domain.models';
-import { DomainService } from '../../../shared/domain/domain.service';
+import {
+  MenuDomainModel,
+  MenuDomainService,
+} from '@restaurant/frontend/domain/menu';
+import { ApiError } from '@restaurant/frontend/core/http';
+import {
+  SseService,
+  BACKOFF_BASE_DELAY_MS,
+} from '@restaurant/frontend/core/realtime';
 
 import { SNAPSHOT_FALLBACK_DELAY_MS } from './menu-store.constants';
 import { MenuUpdateKind } from './menu-store.enums';
@@ -32,7 +35,7 @@ describe(MenuStoreService.name, () => {
       const service = Arrange.setup(spies);
       const received: MenuUpdate[] = [];
       service.menuUpdates().subscribe((update) => received.push(update));
-      expect(spies.domainServiceMock.getMenu).not.toHaveBeenCalled();
+      expect(spies.menuDomainServiceMock.getMenu).not.toHaveBeenCalled();
 
       spies.sseServiceMock.opened$.next();
 
@@ -49,7 +52,7 @@ describe(MenuStoreService.name, () => {
       spies.sseServiceMock.opened$.next();
       spies.sseServiceMock.opened$.next();
 
-      expect(spies.domainServiceMock.getMenu).toHaveBeenCalledTimes(2);
+      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
     });
 
     it('should load the snapshot anyway when the stream does not open in time', () => {
@@ -59,13 +62,13 @@ describe(MenuStoreService.name, () => {
       service.menuUpdates().subscribe();
 
       vi.advanceTimersByTime(SNAPSHOT_FALLBACK_DELAY_MS - 1);
-      expect(spies.domainServiceMock.getMenu).not.toHaveBeenCalled();
+      expect(spies.menuDomainServiceMock.getMenu).not.toHaveBeenCalled();
 
       vi.advanceTimersByTime(1);
-      expect(spies.domainServiceMock.getMenu).toHaveBeenCalledOnce();
+      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledOnce();
 
       spies.sseServiceMock.opened$.next();
-      expect(spies.domainServiceMock.getMenu).toHaveBeenCalledTimes(2);
+      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
     });
 
     it('should not fall back once the stream has opened', () => {
@@ -77,7 +80,7 @@ describe(MenuStoreService.name, () => {
       spies.sseServiceMock.opened$.next();
       vi.advanceTimersByTime(SNAPSHOT_FALLBACK_DELAY_MS);
 
-      expect(spies.domainServiceMock.getMenu).toHaveBeenCalledOnce();
+      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledOnce();
     });
 
     it('should emit the snapshot, then events from the load, then live ones', () => {
@@ -85,7 +88,7 @@ describe(MenuStoreService.name, () => {
       const live = Arrange.createDishDeleted('d-borscht');
       const spies = Arrange.createSpies();
       const snapshot = new Subject<MenuDomainModel>();
-      spies.domainServiceMock.getMenu.mockReturnValue(snapshot);
+      spies.menuDomainServiceMock.getMenu.mockReturnValue(snapshot);
       const service = Arrange.setup(spies);
       const received: MenuUpdate[] = [];
       service.menuUpdates().subscribe((update) => received.push(update));
@@ -109,7 +112,7 @@ describe(MenuStoreService.name, () => {
       const error = Arrange.createNotFoundError();
       const duringLoad = Arrange.createDishDeleted('d-greek');
       const spies = Arrange.createSpies();
-      spies.domainServiceMock.getMenu.mockReturnValue(
+      spies.menuDomainServiceMock.getMenu.mockReturnValue(
         Arrange.createFailingOnce(Arrange.createMenu(), error),
       );
       const service = Arrange.setup(spies);
@@ -135,7 +138,7 @@ describe(MenuStoreService.name, () => {
       const spies = Arrange.createSpies();
       const first = new Subject<MenuDomainModel>();
       const second = new Subject<MenuDomainModel>();
-      spies.domainServiceMock.getMenu
+      spies.menuDomainServiceMock.getMenu
         .mockReturnValueOnce(first)
         .mockReturnValueOnce(second);
       const service = Arrange.setup(spies);
@@ -261,7 +264,7 @@ describe(MenuStoreService.name, () => {
 });
 
 interface Spies {
-  domainServiceMock: { getMenu: Mock };
+  menuDomainServiceMock: { getMenu: Mock };
   sseServiceMock: {
     opened$: Subject<void>;
     events$: Subject<ServerEvent>;
@@ -272,7 +275,7 @@ const Arrange = {
   setup(spies: Spies = Arrange.createSpies()) {
     TestBed.configureTestingModule({
       providers: [
-        { provide: DomainService, useValue: spies.domainServiceMock },
+        { provide: MenuDomainService, useValue: spies.menuDomainServiceMock },
         { provide: SseService, useValue: spies.sseServiceMock },
       ],
     });
@@ -282,9 +285,9 @@ const Arrange = {
 
   createSpies(): Spies {
     return {
-      domainServiceMock: {
+      menuDomainServiceMock: {
         getMenu: vi.fn().mockReturnValue(of(Arrange.createMenu())),
-      } satisfies Mocked<Pick<DomainService, 'getMenu'>>,
+      } satisfies Mocked<Pick<MenuDomainService, 'getMenu'>>,
       sseServiceMock: {
         opened$: new Subject<void>(),
         events$: new Subject<ServerEvent>(),

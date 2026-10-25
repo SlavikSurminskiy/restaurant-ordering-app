@@ -3,8 +3,7 @@ import { ResolveFn } from '@angular/router';
 import { forkJoin, map } from 'rxjs';
 
 import { Money } from '@restaurant/shared-api-types';
-
-import { DomainService } from './shared/domain/domain.service';
+import { MenuDomainService } from '@restaurant/frontend/domain/menu';
 
 export interface AppData {
   discount: Money;
@@ -12,7 +11,7 @@ export interface AppData {
 
 export const appResolver: ResolveFn<AppData> = () =>
   forkJoin({
-    discount: inject(DomainService)
+    discount: inject(MenuDomainService)
       .getOrderDiscount()
       .pipe(map(({ discount }) => discount)),
   });

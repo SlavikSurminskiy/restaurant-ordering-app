@@ -11,7 +11,7 @@ import { setAllEntities, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap } from 'rxjs';
 
-import { errorMessage } from '../../../core/http/api-error';
+import { errorMessage } from '@restaurant/frontend/core/http';
 
 import { categoryConfig, dishConfig } from './menu-store.constants';
 import { LoadStatus, MenuUpdateKind } from './menu-store.enums';

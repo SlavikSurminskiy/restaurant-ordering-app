@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { catchError, firstValueFrom, of } from 'rxjs';
 
-import { AuthDomainService } from '../../shared/domain/auth/auth-domain.service';
+import { AuthDomainService } from '@restaurant/frontend/domain/auth';
 
 import { AuthStore } from './auth-store/auth.store';
 

@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   DishDomainModel,
   CategoryDomainModel,
-} from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+} from '@restaurant/frontend/domain/menu-admin';
 
 import { SetupMenuStoreService } from './setup-menu-store.service';
 

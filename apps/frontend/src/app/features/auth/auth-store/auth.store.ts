@@ -8,8 +8,7 @@ import {
 } from '@ngrx/signals';
 
 import { UserRole } from '@restaurant/shared-api-types';
-
-import { AuthUserDomainModel } from '../../../shared/domain/auth/auth-domain.models';
+import { AuthUserDomainModel } from '@restaurant/frontend/domain/auth';
 
 import { AuthState } from './auth-store.models';
 

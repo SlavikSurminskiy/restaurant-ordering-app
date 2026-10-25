@@ -6,7 +6,7 @@ import {
   withEntities,
 } from '@ngrx/signals/entities';
 
-import { DishDomainModel } from '../../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { DishDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 import { dishConfig } from './dishes-store-feature.constants';
 

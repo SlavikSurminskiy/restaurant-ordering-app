@@ -3,7 +3,7 @@ import { firstValueFrom, of } from 'rxjs';
 import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
-import { MenuAdminDataAccessService } from '../../data-access/menu-admin/menu-admin-data-access.service';
+import { MenuAdminDataAccessService } from '@restaurant/frontend/data-access/menu-admin';
 
 import {
   DishDomainModel,

@@ -6,7 +6,7 @@ import {
   setAllEntities,
 } from '@ngrx/signals/entities';
 
-import { CategoryDomainModel } from '../../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { CategoryDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 import { categoryConfig } from './categories-store-feature.constants';
 

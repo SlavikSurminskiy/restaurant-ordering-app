@@ -3,9 +3,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
 
-import { SseService } from '../../core/realtime/sse.service';
+import { AuthDomainService } from '@restaurant/frontend/domain/auth';
+import { SseService } from '@restaurant/frontend/core/realtime';
+
 import { AuthStore } from '../../features/auth/auth-store/auth.store';
-import { AuthDomainService } from '../../shared/domain/auth/auth-domain.service';
 
 @Component({
   selector: 'app-account',

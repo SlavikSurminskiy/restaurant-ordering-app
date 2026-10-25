@@ -1,7 +1,7 @@
 import {
   DishDomainModel,
   CategoryDomainModel,
-} from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+} from '@restaurant/frontend/domain/menu-admin';
 
 export interface SetupMenuSection {
   category: CategoryDomainModel;

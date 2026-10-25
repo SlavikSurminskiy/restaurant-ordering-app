@@ -4,7 +4,33 @@
     "noPropertyAccessFromIndexSignature": true,
     "isolatedModules": true,
     "emitDecoratorMetadata": false,
-    "module": "preserve"
+    "module": "preserve",
+    "paths": {
+      "@restaurant/shared-api-types": [
+        "../../libs/shared/api-types/src/index.ts"
+      ],
+      "@restaurant/frontend/data-access/menu": [
+        "./src/app/shared/data-access/menu/index.ts"
+      ],
+      "@restaurant/frontend/data-access/auth": [
+        "./src/app/shared/data-access/auth/index.ts"
+      ],
+      "@restaurant/frontend/data-access/menu-admin": [
+        "./src/app/shared/data-access/menu-admin/index.ts"
+      ],
+      "@restaurant/frontend/domain/menu": [
+        "./src/app/shared/domain/menu/index.ts"
+      ],
+      "@restaurant/frontend/domain/auth": [
+        "./src/app/shared/domain/auth/index.ts"
+      ],
+      "@restaurant/frontend/domain/menu-admin": [
+        "./src/app/shared/domain/menu-admin/index.ts"
+      ],
+      "@restaurant/frontend/ui": ["./src/app/shared/ui/index.ts"],
+      "@restaurant/frontend/core/http": ["./src/app/core/http/index.ts"],
+      "@restaurant/frontend/core/realtime": ["./src/app/core/realtime/index.ts"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

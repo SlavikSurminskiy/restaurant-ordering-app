@@ -9,8 +9,8 @@ import {
 } from '@angular/router';
 
 import { UserRole } from '@restaurant/shared-api-types';
+import { AuthUserDomainModel } from '@restaurant/frontend/domain/auth';
 
-import { AuthUserDomainModel } from '../../../shared/domain/auth/auth-domain.models';
 import { AuthStore } from '../auth-store/auth.store';
 
 import { guestGuard, roleGuard, signedInGuard } from './auth.guards';

@@ -1,4 +1,4 @@
-import { CategoryDomainModel } from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { CategoryDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 export interface CategoryDialogData {
   category: CategoryDomainModel | null;
