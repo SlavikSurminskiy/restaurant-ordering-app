@@ -8,16 +8,21 @@ import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 export const NETWORK_ERROR_STATUS = 0;
 
 export class ApiError extends Error {
+  /** `body` is the parsed error response, e.g. the conflicts of a 409. */
   constructor(
     readonly status: number,
     message: string,
+    readonly body: unknown = null,
   ) {
     super(message);
     this.name = 'ApiError';
   }
 
-  static fromResponse({ status }: HttpErrorResponse): ApiError {
-    return new ApiError(status, messageForStatus(status));
+  static fromResponse({ status, error }: HttpErrorResponse): ApiError {
+    // Without a response `error` is the browser's ProgressEvent, not a body.
+    const body = status === NETWORK_ERROR_STATUS ? null : (error ?? null);
+
+    return new ApiError(status, messageForStatus(status), body);
   }
 }
 
@@ -42,6 +47,9 @@ function messageForStatus(status: number): string {
   }
   if (status === HttpStatusCode.NotFound) {
     return 'The requested data was not found.';
+  }
+  if (status === HttpStatusCode.Conflict) {
+    return 'The data changed meanwhile. Please review and try again.';
   }
   return 'The request could not be completed.';
 }
