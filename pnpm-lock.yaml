@@ -225,12 +225,18 @@ importers:
       '@restaurant/shared-api-types':
         specifier: workspace:*
         version: link:../../libs/shared/api-types
+      '@restaurant/shared-utils':
+        specifier: workspace:*
+        version: link:../../libs/shared/utils
 
   apps/frontend:
     dependencies:
       '@restaurant/shared-api-types':
         specifier: workspace:*
         version: link:../../libs/shared/api-types
+      '@restaurant/shared-utils':
+        specifier: workspace:*
+        version: link:../../libs/shared/utils
 
   libs/database:
     dependencies:
@@ -239,6 +245,8 @@ importers:
         version: 7.10.1(prisma@7.10.1(@types/node@24.19.2)(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(typescript@6.0.3)
 
   libs/shared/api-types: {}
+
+  libs/shared/utils: {}
 
 packages:
 

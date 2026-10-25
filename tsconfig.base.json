@@ -19,7 +19,8 @@
     "skipDefaultLibCheck": true,
     "paths": {
       "@restaurant/database": ["./libs/database/src/index.ts"],
-      "@restaurant/shared-api-types": ["./libs/shared/api-types/src/index.ts"]
+      "@restaurant/shared-api-types": ["./libs/shared/api-types/src/index.ts"],
+      "@restaurant/shared-utils": ["./libs/shared/utils/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

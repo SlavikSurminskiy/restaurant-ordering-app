@@ -13,7 +13,7 @@ pnpm start                   # docker Postgres → migrate deploy → seed → b
 
 pnpm build | pnpm test | pnpm lint      # run-many over all projects
 pnpm format | pnpm format:check
-pnpm nx <target> <project>              # projects: frontend, backend, database, shared-api-types
+pnpm nx <target> <project>              # projects: frontend, backend, database, shared-api-types, shared-utils
 
 pnpm db:generate | db:migrate | db:deploy | db:reset | db:seed | db:studio
 ```
@@ -34,6 +34,7 @@ Add `--skip-nx-cache` when you need a real re-run; Nx caches build/lint/test.
 apps/frontend            Angular SPA; /api is proxied to the backend (apps/frontend/proxy.conf.mjs)
 apps/backend             NestJS, global prefix /api
 libs/shared/api-types    @restaurant/shared-api-types — API contracts used by both apps
+libs/shared/utils        @restaurant/shared-utils — logic both apps share (e.g. `calculateTotals`)
 libs/database            @restaurant/database — Prisma schema/migrations, seed (`src/seed`), PrismaService (backend only)
 ```
 
