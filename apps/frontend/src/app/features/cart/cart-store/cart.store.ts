@@ -15,10 +15,7 @@ import {
   removeEntities,
   removeAllEntities,
 } from '@ngrx/signals/entities';
-import {
-  withLocalStorage,
-  withStorageSync,
-} from '@angular-architects/ngrx-toolkit';
+import { withStorageSync } from '@ngrx-toolkit/core';
 
 import { Money } from '@restaurant/shared-api-types';
 import { OrderConflictDomainModel } from '@restaurant/frontend/domain/orders';
@@ -38,7 +35,7 @@ export const CartStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withEntities(cartItemConfig),
-  withStorageSync({ key: CART_STORAGE_KEY }, withLocalStorage()),
+  withStorageSync(CART_STORAGE_KEY),
   withProps(() => ({
     _cartStoreService: inject(CartStoreService),
   })),
