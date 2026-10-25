@@ -3,7 +3,7 @@ import { ResolveFn } from '@angular/router';
 import { forkJoin, map } from 'rxjs';
 
 import { Money } from '@restaurant/shared-api-types';
-import { MenuDomainService } from './shared/domain/menu/menu-domain.service';
+import { MenuDomainService } from '@restaurant/frontend/domain/menu';
 
 export interface AppData {
   discount: Money;

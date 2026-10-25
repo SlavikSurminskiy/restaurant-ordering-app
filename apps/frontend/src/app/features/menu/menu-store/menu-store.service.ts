@@ -26,8 +26,10 @@ import {
   type Dish,
   type ServerEvent,
 } from '@restaurant/shared-api-types';
-import { MenuDomainService } from '../../../shared/domain/menu/menu-domain.service';
-import { MenuSectionDomainModel } from '../../../shared/domain/menu/menu-domain.models';
+import {
+  MenuDomainService,
+  MenuSectionDomainModel,
+} from '@restaurant/frontend/domain/menu';
 import { SseService } from '../../../core/realtime/sse.service';
 import { retryWithBackoff } from '../../../core/realtime/utils/retry-with-backoff';
 

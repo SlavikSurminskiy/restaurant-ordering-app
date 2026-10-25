@@ -1,7 +1,7 @@
 import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { MenuAdminDataAccessService } from '../../data-access/menu-admin/menu-admin-data-access.service';
+import { MenuAdminDataAccessService } from '@restaurant/frontend/data-access/menu-admin';
 
 import {
   DishDomainModel,

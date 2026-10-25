@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import {
   CategoryDomainModel,
   DishDomainModel,
-} from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+} from '@restaurant/frontend/domain/menu-admin';
 
 import { MenuCategory } from './menu-category';
 

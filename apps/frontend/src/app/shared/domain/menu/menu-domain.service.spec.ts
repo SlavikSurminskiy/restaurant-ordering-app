@@ -3,7 +3,7 @@ import { firstValueFrom, of, throwError } from 'rxjs';
 import { Mock, Mocked, vi } from 'vitest';
 
 import { Dish } from '@restaurant/shared-api-types';
-import { MenuDataAccessService } from '../../data-access/menu/menu-data-access.service';
+import { MenuDataAccessService } from '@restaurant/frontend/data-access/menu';
 
 import { DiscountDomainModel } from './menu-domain.models';
 import { MenuDomainService } from './menu-domain.service';

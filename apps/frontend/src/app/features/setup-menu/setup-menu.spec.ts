@@ -5,10 +5,14 @@ import { NEVER, of, throwError } from 'rxjs';
 import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
-import { MenuDomainModel } from '../../shared/domain/menu/menu-domain.models';
-import { MenuDomainService } from '../../shared/domain/menu/menu-domain.service';
-import { DishDomainModel } from '../../shared/domain/menu-admin/menu-admin-domain.models';
-import { MenuAdminDomainService } from '../../shared/domain/menu-admin/menu-admin-domain.service';
+import {
+  MenuDomainModel,
+  MenuDomainService,
+} from '@restaurant/frontend/domain/menu';
+import {
+  DishDomainModel,
+  MenuAdminDomainService,
+} from '@restaurant/frontend/domain/menu-admin';
 import { ApiError } from '../../core/http/api-error';
 
 import { SetupMenu } from './setup-menu';

@@ -1,6 +1,6 @@
 import { Service } from '@angular/core';
 
-import { CreateDishDomainModel } from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { CreateDishDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 import {
   DishDialogData,

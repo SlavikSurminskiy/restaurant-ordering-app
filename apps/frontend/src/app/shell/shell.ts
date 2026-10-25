@@ -3,7 +3,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterOutlet } from '@angular/router';
 
-import { MoneyPipe } from '../shared/ui/pipes/money.pipe';
+import { MoneyPipe } from '@restaurant/frontend/ui';
 
 import { AppData } from '../app.resolver';
 

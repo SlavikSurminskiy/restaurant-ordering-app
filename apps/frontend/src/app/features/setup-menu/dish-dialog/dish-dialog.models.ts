@@ -1,4 +1,4 @@
-import { DishDomainModel } from '../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { DishDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 export const DishDialogMode = {
   Create: 'create',

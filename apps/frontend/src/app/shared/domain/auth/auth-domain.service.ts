@@ -2,7 +2,7 @@ import { HttpStatusCode } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { catchError, Observable, of, throwError } from 'rxjs';
 
-import { AuthDataAccessService } from '../../data-access/auth/auth-data-access.service';
+import { AuthDataAccessService } from '@restaurant/frontend/data-access/auth';
 import { ApiError } from '../../../core/http/api-error';
 
 import {

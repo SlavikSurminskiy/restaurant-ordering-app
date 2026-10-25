@@ -17,7 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 
-import { MenuAdminDomainService } from '../../../shared/domain/menu-admin/menu-admin-domain.service';
+import { MenuAdminDomainService } from '@restaurant/frontend/domain/menu-admin';
 import { errorMessage } from '../../../core/http/api-error';
 
 import { NOT_BLANK } from '../setup-menu.constants';

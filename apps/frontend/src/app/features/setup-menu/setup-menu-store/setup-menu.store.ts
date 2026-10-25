@@ -6,7 +6,7 @@ import {
   withComputed,
 } from '@ngrx/signals';
 
-import { MenuDomainModel } from '../../../shared/domain/menu/menu-domain.models';
+import { MenuDomainModel } from '@restaurant/frontend/domain/menu';
 
 import { withCategories } from './categories-store-feature/categories-store-feature';
 import { withDishes } from './dishes-store-feature/dishes-store-feature';

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { signalStore } from '@ngrx/signals';
 
-import { DishDomainModel } from '../../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { DishDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 import { withDishes } from './dishes-store-feature';
 

@@ -4,7 +4,7 @@ import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
 import { UserRole } from '@restaurant/shared-api-types';
-import { AuthDomainService } from '../../shared/domain/auth/auth-domain.service';
+import { AuthDomainService } from '@restaurant/frontend/domain/auth';
 import { ApiError } from '../../core/http/api-error';
 
 import { AuthStore } from './auth-store/auth.store';

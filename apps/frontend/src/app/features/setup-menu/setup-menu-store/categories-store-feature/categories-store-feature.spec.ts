@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { signalStore } from '@ngrx/signals';
 
-import { CategoryDomainModel } from '../../../../shared/domain/menu-admin/menu-admin-domain.models';
+import { CategoryDomainModel } from '@restaurant/frontend/domain/menu-admin';
 
 import { withCategories } from './categories-store-feature';
 

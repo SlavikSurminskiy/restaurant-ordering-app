@@ -3,8 +3,10 @@ import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import type { Mocked } from 'vitest';
 
-import { DiscountDomainModel } from './shared/domain/menu/menu-domain.models';
-import { MenuDomainService } from './shared/domain/menu/menu-domain.service';
+import {
+  DiscountDomainModel,
+  MenuDomainService,
+} from '@restaurant/frontend/domain/menu';
 
 import { AppData, appResolver } from './app.resolver';
 

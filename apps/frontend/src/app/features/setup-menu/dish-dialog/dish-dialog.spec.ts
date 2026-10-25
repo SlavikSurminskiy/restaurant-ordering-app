@@ -9,8 +9,8 @@ import { vi } from 'vitest';
 import {
   DishDomainModel,
   CategoryDomainModel,
-} from '../../../shared/domain/menu-admin/menu-admin-domain.models';
-import { MenuAdminDomainService } from '../../../shared/domain/menu-admin/menu-admin-domain.service';
+  MenuAdminDomainService,
+} from '@restaurant/frontend/domain/menu-admin';
 
 import { SetupMenuStore } from '../setup-menu-store/setup-menu.store';
 

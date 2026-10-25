@@ -23,7 +23,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { firstValueFrom } from 'rxjs';
 
-import { MenuAdminDomainService } from '../../../shared/domain/menu-admin/menu-admin-domain.service';
+import { MenuAdminDomainService } from '@restaurant/frontend/domain/menu-admin';
 import { errorMessage } from '../../../core/http/api-error';
 
 import { MAX_PRICE_DOLLARS, NOT_BLANK } from '../setup-menu.constants';

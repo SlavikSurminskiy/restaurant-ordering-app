@@ -10,8 +10,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   DishDomainModel,
   CategoryDomainModel,
-} from '../../../shared/domain/menu-admin/menu-admin-domain.models';
-import { MoneyPipe } from '../../../shared/ui/pipes/money.pipe';
+} from '@restaurant/frontend/domain/menu-admin';
+import { MoneyPipe } from '@restaurant/frontend/ui';
 
 import { DishAvailableChange } from './menu-category.models';
 

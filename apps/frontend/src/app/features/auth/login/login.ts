@@ -10,7 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 
-import { AuthDomainService } from '../../../shared/domain/auth/auth-domain.service';
+import { AuthDomainService } from '@restaurant/frontend/domain/auth';
 import { ApiError, errorMessage } from '../../../core/http/api-error';
 import { SseService } from '../../../core/realtime/sse.service';
 

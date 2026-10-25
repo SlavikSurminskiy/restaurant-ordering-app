@@ -5,13 +5,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { filter, switchMap } from 'rxjs';
 
-import { MenuDomainService } from '../../shared/domain/menu/menu-domain.service';
+import { MenuDomainService } from '@restaurant/frontend/domain/menu';
 import {
   DishDomainModel,
   CategoryDomainModel,
-} from '../../shared/domain/menu-admin/menu-admin-domain.models';
-import { MenuAdminDomainService } from '../../shared/domain/menu-admin/menu-admin-domain.service';
-import { ConfirmDialogOpenerService } from '../../shared/ui/components/confirm-dialog/confirm-dialog-opener.service';
+  MenuAdminDomainService,
+} from '@restaurant/frontend/domain/menu-admin';
+import { ConfirmDialogOpenerService } from '@restaurant/frontend/ui';
 import { errorMessage } from '../../core/http/api-error';
 
 import { CategoryDialogOpenerService } from './category-dialog/category-dialog-opener.service';

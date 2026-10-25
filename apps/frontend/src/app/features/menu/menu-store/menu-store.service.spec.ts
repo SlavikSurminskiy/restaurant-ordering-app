@@ -9,8 +9,10 @@ import {
   MenuEventType,
   ServerEvent,
 } from '@restaurant/shared-api-types';
-import { MenuDomainModel } from '../../../shared/domain/menu/menu-domain.models';
-import { MenuDomainService } from '../../../shared/domain/menu/menu-domain.service';
+import {
+  MenuDomainModel,
+  MenuDomainService,
+} from '@restaurant/frontend/domain/menu';
 import { ApiError } from '../../../core/http/api-error';
 import { SseService } from '../../../core/realtime/sse.service';
 import { BACKOFF_BASE_DELAY_MS } from '../../../core/realtime/utils/backoff-delay';
