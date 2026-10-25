@@ -1,0 +1,71 @@
+<h1 class="cart__title">Your cart</h1>
+
+@if (lines().length === 0) {
+  <div class="cart__empty">
+    <p>Your cart is empty.</p>
+    <a matButton="filled" routerLink="/menu">Browse the menu</a>
+  </div>
+} @else {
+  @if (warnings().length) {
+    <div class="cart__warnings" role="alert">
+      <span>Some dishes changed since you added them.</span>
+      <button matButton="tonal" type="button" (click)="updateCart()">
+        Update cart
+      </button>
+    </div>
+  }
+
+  <section aria-label="Cart items">
+    @for (line of lines(); track line.item.dishId) {
+      <app-cart-line
+        [line]="line"
+        (quantityChange)="changeQuantity(line.item.dishId, $event)"
+        (remove)="remove(line.item.dishId)"
+        (editPrice)="editPrice(line)"
+      />
+    }
+  </section>
+
+  <dl class="cart__totals">
+    <div class="cart__total-row">
+      <dt>Subtotal</dt>
+      <dd>{{ totals().subtotal | money }}</dd>
+    </div>
+    @if (totals().discount > 0) {
+      <div class="cart__total-row">
+        <dt>Discount</dt>
+        <dd>−{{ totals().discount | money }}</dd>
+      </div>
+    }
+    <div class="cart__total-row cart__total-row--grand">
+      <dt>Total</dt>
+      <dd>{{ totals().total | money }}</dd>
+    </div>
+  </dl>
+
+  <div class="cart__actions">
+    @if (isOffline()) {
+      <span class="cart__hint">You are offline. Checkout is paused.</span>
+    }
+
+    @if (authStore.isSignedIn()) {
+      <button
+        matButton="filled"
+        type="button"
+        [disabled]="!canCheckout()"
+        [showProgress]="isCheckingOut()"
+        (click)="checkout()"
+      >
+        Checkout
+        <mat-progress-spinner
+          progressIndicator
+          diameter="20"
+          mode="indeterminate"
+          aria-label="Placing the order"
+        />
+      </button>
+    } @else {
+      <a matButton="filled" routerLink="/login">Sign in to order</a>
+    }
+  </div>
+}

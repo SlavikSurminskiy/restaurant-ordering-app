@@ -14,6 +14,7 @@ import {
   takeUntil,
   skipUntil,
   switchMap,
+  Subject,
   throwError,
   Observable,
   shareReplay,
@@ -49,6 +50,7 @@ import { MenuEntitiesState, MenuUpdate } from './menu-store.models';
 export class MenuStoreService {
   readonly #menuDomainService = inject(MenuDomainService);
   readonly #sseService = inject(SseService);
+  readonly #reloadRequests = new Subject<void>();
 
   buildSections(
     categories: Category[],
@@ -74,6 +76,10 @@ export class MenuStoreService {
     );
   }
 
+  reload(): void {
+    this.#reloadRequests.next();
+  }
+
   eventUpdater(event: MenuEvent): PartialStateUpdater<MenuEntitiesState> {
     switch (event.type) {
       case MenuEventType.CategoryUpserted:
@@ -95,6 +101,7 @@ export class MenuStoreService {
     return merge(
       opened$,
       timer(SNAPSHOT_FALLBACK_DELAY_MS).pipe(takeUntil(opened$)),
+      this.#reloadRequests,
     );
   }
 

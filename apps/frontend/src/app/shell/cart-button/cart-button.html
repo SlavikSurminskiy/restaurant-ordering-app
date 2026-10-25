@@ -1,0 +1,14 @@
+<a
+  matIconButton
+  routerLink="/cart"
+  [attr.aria-label]="'Cart, ' + store.count() + ' items'"
+>
+  <mat-icon
+    [matBadge]="store.count()"
+    [matBadgeHidden]="store.count() === 0"
+    matBadgeSize="medium"
+    aria-hidden="true"
+  >
+    shopping_cart
+  </mat-icon>
+</a>

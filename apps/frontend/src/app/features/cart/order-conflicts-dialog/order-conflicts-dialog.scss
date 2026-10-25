@@ -1,0 +1,23 @@
+.order-conflicts__intro {
+  margin-top: 0;
+}
+
+.order-conflicts__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-conflicts__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    flex: none;
+    color: var(--mat-sys-error);
+  }
+}

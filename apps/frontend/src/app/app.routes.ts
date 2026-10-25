@@ -21,6 +21,10 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./features/menu/menu').then((m) => m.Menu),
       },
       {
+        path: 'cart',
+        loadComponent: () => import('./features/cart/cart').then((m) => m.Cart),
+      },
+      {
         path: 'login',
         canMatch: [guestGuard],
         loadComponent: () =>

@@ -95,6 +95,25 @@ describe('apiErrorInterceptor', () => {
     expect(observer.error).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the error response body', () => {
+    const { http, backend, observer } = Arrange.setup();
+    const body = { conflicts: [] };
+
+    http.post('/api/orders', {}).subscribe(observer);
+    backend.expectOne('/api/orders').flush(body, {
+      status: HttpStatusCode.Conflict,
+      statusText: 'Conflict',
+    });
+
+    expect(observer.error).toHaveBeenCalledWith(
+      new ApiError(
+        HttpStatusCode.Conflict,
+        'The data changed meanwhile. Please review and try again.',
+        body,
+      ),
+    );
+  });
+
   it('reports a network failure as an unreachable server', async () => {
     const { http, backend, observer } = Arrange.setup();
 

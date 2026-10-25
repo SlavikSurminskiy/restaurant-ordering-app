@@ -69,5 +69,8 @@ export const MenuStore = signalStore(
         tap((update) => store._applyUpdate(update)),
       ),
     ),
+    reloadMenu(): void {
+      store._menuStoreService.reload();
+    },
   })),
 );

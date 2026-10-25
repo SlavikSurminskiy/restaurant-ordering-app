@@ -19,6 +19,9 @@
       "@restaurant/frontend/data-access/menu-admin": [
         "./src/app/shared/data-access/menu-admin/index.ts"
       ],
+      "@restaurant/frontend/data-access/orders": [
+        "./src/app/shared/data-access/orders/index.ts"
+      ],
       "@restaurant/frontend/domain/menu": [
         "./src/app/shared/domain/menu/index.ts"
       ],
@@ -27,6 +30,9 @@
       ],
       "@restaurant/frontend/domain/menu-admin": [
         "./src/app/shared/domain/menu-admin/index.ts"
+      ],
+      "@restaurant/frontend/domain/orders": [
+        "./src/app/shared/domain/orders/index.ts"
       ],
       "@restaurant/frontend/ui": ["./src/app/shared/ui/index.ts"],
       "@restaurant/frontend/core/http": ["./src/app/core/http/index.ts"],

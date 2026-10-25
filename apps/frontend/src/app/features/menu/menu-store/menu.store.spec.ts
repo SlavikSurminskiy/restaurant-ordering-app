@@ -22,6 +22,17 @@ import { MenuStoreService } from './menu-store.service';
 import { MenuStore } from './menu.store';
 
 describe('MenuStore', () => {
+  it('should ask the service for a fresh snapshot', () => {
+    const store = Arrange.setup(Arrange.createSpies());
+    const reloadSpy = vi
+      .spyOn(TestBed.inject(MenuStoreService), 'reload')
+      .mockReturnValue(undefined);
+
+    store.reloadMenu();
+
+    expect(reloadSpy).toHaveBeenCalledOnce();
+  });
+
   describe('keepMenuUpToDate', () => {
     it('should be loading until the first snapshot', () => {
       const spies = Arrange.createSpies();

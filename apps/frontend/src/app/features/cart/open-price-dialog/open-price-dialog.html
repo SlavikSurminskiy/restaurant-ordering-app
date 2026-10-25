@@ -1,0 +1,32 @@
+<h2 mat-dialog-title>Your price for {{ data.dishName }}</h2>
+
+<form [formRoot]="form">
+  <mat-dialog-content class="open-price-form__fields">
+    <p class="open-price-form__hint">
+      This dish has no fixed price. Pay what you think it is worth.
+    </p>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Price, $</mat-label>
+      <input
+        matInput
+        type="number"
+        step="0.01"
+        [formField]="form.price"
+        cdkFocusInitial
+      />
+      <mat-error>
+        Enter a price from ${{ MIN_OPEN_PRICE_DOLLARS }} to ${{
+          MAX_OPEN_PRICE_DOLLARS
+        }}.
+      </mat-error>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close>Cancel</button>
+    <button matButton="filled" type="submit" [disabled]="form().invalid()">
+      {{ data.unitPrice === null ? 'Add to cart' : 'Save' }}
+    </button>
+  </mat-dialog-actions>
+</form>

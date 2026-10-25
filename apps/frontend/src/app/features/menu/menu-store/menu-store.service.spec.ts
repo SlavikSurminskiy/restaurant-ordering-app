@@ -57,6 +57,17 @@ describe(MenuStoreService.name, () => {
       expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
     });
 
+    it('should load a fresh snapshot on request', () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+      service.menuUpdates().subscribe();
+      spies.sseServiceMock.opened$.next();
+
+      service.reload();
+
+      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
+    });
+
     it('should load the snapshot anyway when the stream does not open in time', () => {
       vi.useFakeTimers();
       const spies = Arrange.createSpies();

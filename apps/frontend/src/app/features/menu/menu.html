@@ -50,7 +50,7 @@
           @if (row.kind === MenuRowKind.Category) {
             <h2 class="category">{{ row.category.name }}</h2>
           } @else {
-            <app-dish-card [dish]="row.dish" />
+            <app-dish-card [dish]="row.dish" (add)="addToCart(row.dish)" />
           }
         </div>
       </cdk-virtual-scroll-viewport>

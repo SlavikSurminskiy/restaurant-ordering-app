@@ -8,6 +8,7 @@ import { MoneyPipe } from '@restaurant/frontend/ui';
 import { AppData } from '../app.resolver';
 
 import { Account } from './account/account';
+import { CartButton } from './cart-button/cart-button';
 import { ConnectionIndicator } from './connection-indicator/connection-indicator';
 
 @Component({
@@ -19,6 +20,7 @@ import { ConnectionIndicator } from './connection-indicator/connection-indicator
     MatToolbarModule,
 
     Account,
+    CartButton,
     MoneyPipe,
     ConnectionIndicator,
   ],

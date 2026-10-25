@@ -1,0 +1,48 @@
+:host {
+  display: block;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.cart-line__main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cart-line__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-line__name {
+  margin: 0;
+  font: var(--mat-sys-title-medium);
+}
+
+.cart-line__price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.cart-line__quantity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cart-line__total {
+  min-width: 80px;
+  text-align: right;
+  font: var(--mat-sys-title-medium);
+}
+
+.cart-line__warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  color: var(--mat-sys-error);
+}
