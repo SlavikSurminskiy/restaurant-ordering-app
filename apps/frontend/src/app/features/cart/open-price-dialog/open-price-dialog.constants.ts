@@ -1,0 +1,3 @@
+export const MIN_OPEN_PRICE_DOLLARS = 0.01;
+
+export const MAX_OPEN_PRICE_DOLLARS = 10_000;

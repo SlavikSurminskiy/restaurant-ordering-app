@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>Your cart has changed</h2>
+
+<mat-dialog-content>
+  <p class="order-conflicts__intro">
+    The menu changed since you added these dishes. Nothing was ordered.
+  </p>
+
+  <ul class="order-conflicts__list">
+    @for (warning of data.warnings; track warning.dishId) {
+      <li class="order-conflicts__item">
+        <mat-icon aria-hidden="true">warning</mat-icon>
+        {{ warning | cartWarning }}
+      </li>
+    }
+  </ul>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton type="button" [mat-dialog-close]="false">
+    Back to cart
+  </button>
+  <button
+    matButton="filled"
+    type="button"
+    [mat-dialog-close]="true"
+    cdkFocusInitial
+  >
+    Update cart
+  </button>
+</mat-dialog-actions>

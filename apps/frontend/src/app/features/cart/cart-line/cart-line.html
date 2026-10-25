@@ -1,0 +1,60 @@
+@let item = line().item;
+
+<div class="cart-line__main">
+  <div class="cart-line__info">
+    <h3 class="cart-line__name">{{ item.name }}</h3>
+    <span class="cart-line__price">
+      {{ item.unitPrice | money }} each
+      @if (line().isOpenPrice) {
+        <button
+          matButton
+          type="button"
+          [attr.aria-label]="'Change your price for ' + item.name"
+          (click)="editPrice.emit()"
+        >
+          Change price
+        </button>
+      }
+    </span>
+  </div>
+
+  <div class="cart-line__quantity">
+    <button
+      matIconButton
+      type="button"
+      [attr.aria-label]="'One less ' + item.name"
+      (click)="quantityChange.emit(item.quantity - 1)"
+    >
+      <mat-icon>remove</mat-icon>
+    </button>
+    <span [attr.aria-label]="'Quantity of ' + item.name">{{
+      item.quantity
+    }}</span>
+    <button
+      matIconButton
+      type="button"
+      [attr.aria-label]="'One more ' + item.name"
+      (click)="quantityChange.emit(item.quantity + 1)"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
+
+  <span class="cart-line__total">{{ line().total | money }}</span>
+
+  <button
+    matIconButton
+    type="button"
+    [attr.aria-label]="'Remove ' + item.name"
+    (click)="remove.emit()"
+  >
+    <mat-icon>delete</mat-icon>
+  </button>
+</div>
+
+@if (line().warning; as warning) {
+  <p class="cart-line__warning" role="status">
+    <mat-icon aria-hidden="true">warning</mat-icon>
+    {{ warning | cartWarning }}
+  </p>
+}

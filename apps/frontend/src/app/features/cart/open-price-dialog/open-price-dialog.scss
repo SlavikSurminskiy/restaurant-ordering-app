@@ -1,0 +1,11 @@
+.open-price-form__fields {
+  display: flex;
+  flex-direction: column;
+  min-width: min(360px, 80vw);
+}
+
+.open-price-form__hint {
+  margin-top: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
