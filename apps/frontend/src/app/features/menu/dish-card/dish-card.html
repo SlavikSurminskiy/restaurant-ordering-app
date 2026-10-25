@@ -25,7 +25,16 @@
 <div class="dish-card__meta">
   <span class="dish-card__price">{{ priceLabel() }}</span>
 
-  @if (!dish().available) {
+  @if (dish().available) {
+    <button
+      matButton="tonal"
+      type="button"
+      [attr.aria-label]="'Add ' + dish().name + ' to cart'"
+      (click)="add.emit()"
+    >
+      Add
+    </button>
+  } @else {
     <span class="dish-card__badge">Unavailable</span>
   }
 </div>

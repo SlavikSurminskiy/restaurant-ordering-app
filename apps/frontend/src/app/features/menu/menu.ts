@@ -11,7 +11,12 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { auditTime, map, of, startWith, switchMap } from 'rxjs';
+import { auditTime, filter, map, of, startWith, switchMap } from 'rxjs';
+
+import { Dish } from '@restaurant/shared-api-types';
+
+import { CartStore } from '../cart/cart-store/cart.store';
+import { OpenPriceDialogOpenerService } from '../cart/open-price-dialog/open-price-dialog-opener.service';
 
 import { DishCard } from './dish-card/dish-card';
 import { DishSkeleton } from './dish-skeleton/dish-skeleton';
@@ -39,6 +44,8 @@ import { MenuStore } from './menu-store/menu.store';
 })
 export class Menu {
   readonly #menuService = inject(MenuService);
+  readonly #cartStore = inject(CartStore);
+  readonly #openPriceDialogOpener = inject(OpenPriceDialogOpenerService);
 
   protected readonly store = inject(MenuStore);
 
@@ -86,6 +93,19 @@ export class Menu {
   protected onCategoryChange({ source, value }: MatButtonToggleChange): void {
     source.checked = value === this.activeCategoryId();
     this.#scrollToCategory(value);
+  }
+
+  protected addToCart({ id, name, price, isOpenPrice }: Dish): void {
+    if (!isOpenPrice && price !== null) {
+      this.#cartStore.add({ dishId: id, name, unitPrice: price });
+    } else {
+      this.#openPriceDialogOpener
+        .openDialog({ dishName: name, unitPrice: null })
+        .pipe(filter((unitPrice) => unitPrice !== undefined))
+        .subscribe((unitPrice) =>
+          this.#cartStore.add({ dishId: id, name, unitPrice }),
+        );
+    }
   }
 
   protected trackRow = (_: number, row: MenuRow) =>
