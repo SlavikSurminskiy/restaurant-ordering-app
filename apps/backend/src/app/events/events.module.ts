@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
-import { EventBus } from './event-bus';
+import { EventBus } from './event-bus/event-bus';
 import { EventsController } from './events.controller';
 
 @Global()

@@ -9,7 +9,7 @@ import {
   takeUntil,
 } from 'rxjs';
 
-import { EventBus } from './event-bus';
+import { EventBus } from './event-bus/event-bus';
 
 /** Keeps idle connections open through proxies that drop silent streams. */
 export const HEARTBEAT_INTERVAL_MS = 20_000;

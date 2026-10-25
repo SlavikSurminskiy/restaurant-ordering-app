@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import { Prisma, PrismaErrorCode, PrismaService } from '@restaurant/database';
 import { Dish, MenuEventType } from '@restaurant/shared-api-types';
 
-import { EventBus } from '../../events/event-bus';
+import { EventBus } from '../../events/event-bus/event-bus';
 import { DISH_SELECT } from '../menu.constants';
 
 import { DishesService } from './dishes.service';

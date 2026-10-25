@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 
 import { DishDeletedEvent, MenuEventType } from '@restaurant/shared-api-types';
 
-import { EventBus } from './event-bus';
+import { EventBus } from './event-bus/event-bus';
 import { EventsController, HEARTBEAT_INTERVAL_MS } from './events.controller';
 
 describe(EventsController.name, () => {
