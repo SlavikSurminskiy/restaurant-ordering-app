@@ -1,6 +1,7 @@
 import { Prisma } from '../generated/prisma/client';
 
 export const PrismaErrorCode = {
+  UniqueConstraintViolation: 'P2002',
   ForeignKeyViolation: 'P2003',
   RecordNotFound: 'P2025',
 } as const;
