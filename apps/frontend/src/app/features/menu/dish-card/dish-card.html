@@ -56,7 +56,7 @@
         matButton="tonal"
         type="button"
         [attr.aria-label]="'Add ' + dish().name + ' to cart'"
-        (click)="addToCart()"
+        (click)="add.emit()"
       >
         Add
       </button>

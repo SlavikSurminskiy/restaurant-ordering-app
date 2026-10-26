@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import { Dish } from '@restaurant/shared-api-types';
 
 import { DishCard } from './dish-card';
+import { MAX_ADD_QUANTITY } from './dish-card.constants';
 
 describe(DishCard.name, () => {
   it('should show the dish with its price', async () => {
@@ -38,27 +39,51 @@ describe(DishCard.name, () => {
       }),
     );
 
-    expect(spies.add).toHaveBeenCalledExactlyOnceWith(1);
+    expect(spies.add).toHaveBeenCalledOnce();
   });
 
-  it('should add the chosen quantity and start over at one', async () => {
-    const user = Arrange.setupUser();
-    const spies = Arrange.createSpies();
-    const { renderResult } = await Arrange.setup(Arrange.createDish(), spies);
-    const more = renderResult.getByRole('button', {
-      name: 'One more Chicken Caesar',
-    });
-
-    await user.click(more);
-    await user.click(more);
-    await user.click(
-      renderResult.getByRole('button', { name: 'Add Chicken Caesar to cart' }),
+  it('should show the chosen quantity', async () => {
+    const { renderResult } = await Arrange.setup(
+      Arrange.createDish(),
+      undefined,
+      3,
     );
 
-    expect(spies.add).toHaveBeenCalledExactlyOnceWith(3);
     expect(
       renderResult.getByLabelText('Quantity of Chicken Caesar').textContent,
-    ).toBe('1');
+    ).toBe('3');
+  });
+
+  it('should report one more portion', async () => {
+    const user = Arrange.setupUser();
+    const spies = Arrange.createSpies();
+    const { renderResult } = await Arrange.setup(
+      Arrange.createDish(),
+      spies,
+      3,
+    );
+
+    await user.click(
+      renderResult.getByRole('button', { name: 'One more Chicken Caesar' }),
+    );
+
+    expect(spies.quantityChange).toHaveBeenCalledExactlyOnceWith(4);
+  });
+
+  it('should report one less portion', async () => {
+    const user = Arrange.setupUser();
+    const spies = Arrange.createSpies();
+    const { renderResult } = await Arrange.setup(
+      Arrange.createDish(),
+      spies,
+      3,
+    );
+
+    await user.click(
+      renderResult.getByRole('button', { name: 'One less Chicken Caesar' }),
+    );
+
+    expect(spies.quantityChange).toHaveBeenCalledExactlyOnceWith(2);
   });
 
   it('should not go below one portion', async () => {
@@ -71,23 +96,18 @@ describe(DishCard.name, () => {
     ).toBe(true);
   });
 
-  it('should start over at one for another dish', async () => {
-    const user = Arrange.setupUser();
-    const { renderResult } = await Arrange.setup(Arrange.createDish());
-    await user.click(
-      renderResult.getByRole('button', { name: 'One more Chicken Caesar' }),
+  it('should not go above the maximum', async () => {
+    const { renderResult } = await Arrange.setup(
+      Arrange.createDish(),
+      undefined,
+      MAX_ADD_QUANTITY,
     );
 
-    renderResult.fixture.componentRef.setInput('dish', {
-      ...Arrange.createDish(),
-      id: 'd-greek',
-      name: 'Greek Salad',
-    });
-    await renderResult.fixture.whenStable();
-
     expect(
-      renderResult.getByLabelText('Quantity of Greek Salad').textContent,
-    ).toBe('1');
+      renderResult
+        .getByRole('button', { name: 'One more Chicken Caesar' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
   });
 
   it('should not let an unavailable dish be added', async () => {
@@ -103,12 +123,13 @@ describe(DishCard.name, () => {
 
 interface Spies {
   add: Mock;
+  quantityChange: Mock;
 }
 
 const Arrange = {
-  async setup(dish: Dish, spies?: Spies) {
+  async setup(dish: Dish, spies?: Spies, quantity = 1) {
     const renderResult = await render(DishCard, {
-      inputs: { dish },
+      inputs: { dish, quantity },
       on: spies ?? Arrange.createSpies(),
     });
 
@@ -120,7 +141,7 @@ const Arrange = {
   },
 
   createSpies(): Spies {
-    return { add: vi.fn() };
+    return { add: vi.fn(), quantityChange: vi.fn() };
   },
 
   createDish(): Dish {

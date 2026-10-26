@@ -52,7 +52,9 @@
           } @else {
             <app-dish-card
               [dish]="row.dish"
-              (add)="addToCart(row.dish, $event)"
+              [quantity]="chosenQuantities()[row.dish.id] ?? 1"
+              (quantityChange)="chooseQuantity(row.dish.id, $event)"
+              (add)="addToCart(row.dish)"
             />
           }
         </div>

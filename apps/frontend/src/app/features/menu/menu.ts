@@ -95,20 +95,41 @@ export class Menu {
     this.#scrollToCategory(value);
   }
 
-  protected addToCart(
-    { id, name, price, isOpenPrice }: Dish,
-    quantity: number,
-  ): void {
+  protected readonly chosenQuantities = signal<
+    Readonly<Record<string, number>>
+  >({});
+
+  protected chooseQuantity(dishId: string, quantity: number): void {
+    this.chosenQuantities.update((quantities) => ({
+      ...quantities,
+      [dishId]: quantity,
+    }));
+  }
+
+  protected addToCart({ id, name, price, isOpenPrice }: Dish): void {
+    const quantity = this.chosenQuantities()[id] ?? 1;
+
     if (!isOpenPrice && price !== null) {
       this.#cartStore.add({ dishId: id, name, unitPrice: price }, quantity);
+      this.#clearQuantity(id);
     } else {
       this.#openPriceDialogOpener
         .openDialog({ dishName: name, unitPrice: null })
         .pipe(filter((unitPrice) => unitPrice !== undefined))
-        .subscribe((unitPrice) =>
-          this.#cartStore.add({ dishId: id, name, unitPrice }, quantity),
-        );
+        .subscribe((unitPrice) => {
+          this.#cartStore.add({ dishId: id, name, unitPrice }, quantity);
+          this.#clearQuantity(id);
+        });
     }
+  }
+
+  #clearQuantity(dishId: string): void {
+    this.chosenQuantities.update((quantities) => {
+      const rest = { ...quantities };
+      delete rest[dishId];
+
+      return rest;
+    });
   }
 
   protected trackRow = (_: number, row: MenuRow) =>

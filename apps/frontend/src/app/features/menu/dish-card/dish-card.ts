@@ -1,10 +1,4 @@
-import {
-  input,
-  output,
-  computed,
-  Component,
-  linkedSignal,
-} from '@angular/core';
+import { input, output, computed, Component } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -26,16 +20,13 @@ import { MAX_ADD_QUANTITY } from './dish-card.constants';
 })
 export class DishCard {
   readonly dish = input.required<Dish>();
+  /** Kept by the page: the virtual list reuses cards for other dishes. */
+  readonly quantity = input(1);
 
-  readonly add = output<number>();
+  readonly quantityChange = output<number>();
+  readonly add = output<void>();
 
   protected readonly MAX_ADD_QUANTITY = MAX_ADD_QUANTITY;
-
-  // The virtual list reuses cards for other dishes, so a new dish starts at 1 again.
-  protected readonly quantity = linkedSignal({
-    source: () => this.dish().id,
-    computation: () => 1,
-  });
 
   protected readonly priceLabel = computed(() => {
     const { price } = this.dish();
@@ -44,13 +35,8 @@ export class DishCard {
   });
 
   protected changeQuantity(by: number): void {
-    this.quantity.update((quantity) =>
-      Math.min(Math.max(quantity + by, 1), MAX_ADD_QUANTITY),
+    this.quantityChange.emit(
+      Math.min(Math.max(this.quantity() + by, 1), MAX_ADD_QUANTITY),
     );
-  }
-
-  protected addToCart(): void {
-    this.add.emit(this.quantity());
-    this.quantity.set(1);
   }
 }
