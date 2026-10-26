@@ -1,6 +1,9 @@
 :host {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
   gap: 24px;
 }
 
