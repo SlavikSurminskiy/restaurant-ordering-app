@@ -6,10 +6,19 @@ import { AppData } from '../app.resolver';
 import { Shell } from './shell';
 
 describe(Shell.name, () => {
-  it('should render the toolbar title', async () => {
+  it('should show the navigation instead of a title', async () => {
     const { renderResult } = await Arrange.setup(Arrange.createAppData());
 
-    expect(renderResult.getByText('Restaurant Ordering')).toBeTruthy();
+    expect(renderResult.getByRole('navigation', { name: 'Main' })).toBeTruthy();
+    expect(renderResult.queryByText('Restaurant Ordering')).toBeNull();
+  });
+
+  it('should link to the cart', async () => {
+    const { renderResult } = await Arrange.setup(Arrange.createAppData());
+
+    expect(
+      renderResult.getByRole('link', { name: /^Cart/ }).getAttribute('href'),
+    ).toBe('/cart');
   });
 
   it('should show the order discount in the toolbar', async () => {
