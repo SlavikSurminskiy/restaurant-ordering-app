@@ -1,10 +1,12 @@
 # Restaurant Ordering
 
-Fullstack restaurant ordering app: an Nx monorepo with an Angular frontend, a NestJS backend and PostgreSQL via Prisma.
+A real-time restaurant ordering prototype: an Nx monorepo with an Angular 22 frontend, a NestJS 11 backend and PostgreSQL via Prisma 7.
 
-Architecture and conventions are described in [docs/architecture.md](docs/architecture.md).
+- **Menu setup** (admins): categories and dishes, prices, availability and open-price dishes; every change reaches open menus immediately.
+- **Menu and cart:** a large virtualized menu, quantities, prices entered for open-price dishes, a fixed discount, and a checkout that never places an order twice and warns about menu changes first.
+- **Orders:** a page where statuses update live; customers see their own orders, admins see all of them.
 
-## Getting started
+## Running the project
 
 Requirements: Node.js 24+, pnpm 11, Docker (running).
 
@@ -14,9 +16,7 @@ pnpm env:init   # .env from .env.example (keeps an existing .env)
 pnpm start      # PostgreSQL → migrations → seed → backend + frontend
 ```
 
-`pnpm start` brings everything up: it starts PostgreSQL in Docker, applies migrations and runs the seed (both are safe to re-run), then serves the backend on http://localhost:3000/api and the frontend on http://localhost:4200.
-
-Seeded users (local development only):
+Open http://localhost:4200 (the API is on http://localhost:3000/api). Seeded users for local development:
 
 | Email                  | Password      | Role     |
 | ---------------------- | ------------- | -------- |
@@ -24,37 +24,21 @@ Seeded users (local development only):
 | `customer@example.com` | `customer123` | Customer |
 | `alice@example.com`    | `alice123`    | Customer |
 
-## Commands
+`pnpm test`, `pnpm lint` and `pnpm build` run for all projects. All commands, configuration and troubleshooting: [docs/development.md](docs/development.md).
 
-| Command             | Description                                    |
-| ------------------- | ---------------------------------------------- |
-| `pnpm env:init`     | Create `.env` from `.env.example` if missing   |
-| `pnpm start`        | PostgreSQL, migrations, seed, then dev servers |
-| `pnpm build`        | Build all projects                             |
-| `pnpm test`         | Run Vitest for all projects                    |
-| `pnpm lint`         | Run ESLint for all projects                    |
-| `pnpm format`       | Format files with Prettier                     |
-| `pnpm format:check` | Check formatting                               |
-| `pnpm db:up`        | Start PostgreSQL in Docker                     |
-| `pnpm db:generate`  | `prisma generate`                              |
-| `pnpm db:migrate`   | `prisma migrate dev`: create/apply a migration |
-| `pnpm db:deploy`    | `prisma migrate deploy`                        |
-| `pnpm db:reset`     | `prisma migrate reset`                         |
-| `pnpm db:seed`      | `prisma db seed`                               |
-| `pnpm db:studio`    | Open Prisma Studio                             |
+## Key decisions and trade-offs
 
-Database commands start PostgreSQL themselves if it isn't running. For a single project: `pnpm nx <target> <project>`, e.g. `pnpm nx test frontend`.
+- **Shared contracts** (`libs/shared/api-types`) for both apps, so API changes fail at compile time.
+- **Server-Sent Events** for one-way live updates, with a snapshot-plus-buffered-events protocol on every (re)connect.
+- **Idempotent checkout:** an `Idempotency-Key` per attempt and a unique constraint on the server; the server rejects stale prices with `409 { conflicts }`, and the cart checks itself against the live menu before that.
+- **Layered frontend:** data-access → domain → thin NgRx Signal Stores → pure components.
 
-## Troubleshooting
+Details and the reasoning behind each: [docs/decisions.md](docs/decisions.md). Project layout and conventions: [docs/architecture.md](docs/architecture.md).
 
-`.env.example` is the committed template with local development defaults; `.env` is your git-ignored local copy. If `pnpm env:init` doesn't work, copy `.env.example` to `.env` in the project root manually. Common reasons it fails:
+## Deliberate simplifications
 
-- **PowerShell execution policy** blocks the `pnpm.ps1` wrapper (`running scripts is disabled on this system`). Run `pnpm.cmd env:init` instead, or allow local scripts once with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
-- **pnpm or Node.js is not installed or not on `PATH`**: the shell can't find the `pnpm` or `node` command.
-- **The command runs outside the project root**: in a subfolder such as `apps/frontend`, pnpm uses that folder's `package.json`, which has no `env:init` script.
-- **No write permission** in the project folder, so `.env` can't be created.
+No request-body validation on the backend, an in-memory event bus for one instance, stateless JWT without revocation or rate limiting, one global discount, a timer instead of a kitchen, no end-to-end tests. The full list: [docs/production-readiness.md](docs/production-readiness.md#deliberate-simplifications).
 
-Other common issues:
+## Production readiness
 
-- `pnpm start` fails at `database:postgres-up`: Docker is not running.
-- `Port 4200 is already in use` (or 3000, 9229): a dev server from an earlier run is still alive; stop it first.
+Input validation and auth hardening, HTTPS with HTTP/2 behind a reverse proxy, a shared event bus (Redis or PostgreSQL `LISTEN/NOTIFY`) for several instances, resumable event streams, Docker images, monitoring and end-to-end tests. Details: [docs/production-readiness.md](docs/production-readiness.md#what-production-needs).
