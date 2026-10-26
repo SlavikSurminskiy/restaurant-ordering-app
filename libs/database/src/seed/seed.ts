@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
 
 import { menu } from './menu';
+import { orders } from './orders';
 import { users } from './users';
 import { hashPassword } from '../lib/password';
 
@@ -63,13 +64,75 @@ async function seedMenu(): Promise<boolean> {
   return true;
 }
 
+function orderDiscount(): number {
+  const discount = Number(process.env['ORDER_DISCOUNT'] ?? 0);
+
+  return Number.isInteger(discount) && discount > 0 ? discount : 0;
+}
+
+/**
+ * Puts the demo orders back to their seeded status and time on every run, so
+ * the orders page starts with every status; the backend timer then moves the
+ * active ones on live.
+ */
+async function seedOrders(): Promise<void> {
+  const now = Date.now();
+  const discount = orderDiscount();
+
+  for (const order of orders) {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: order.userEmail },
+    });
+    const items = await Promise.all(
+      order.items.map(async ({ dish: name, quantity }) => {
+        const dish = await prisma.dish.findFirstOrThrow({ where: { name } });
+
+        if (dish.price === null) {
+          throw new Error(`Seed order dish ${name} has no fixed price`);
+        }
+
+        return { dishId: dish.id, name, unitPrice: dish.price, quantity };
+      }),
+    );
+    const subtotal = items.reduce(
+      (sum, { unitPrice, quantity }) => sum + unitPrice * quantity,
+      0,
+    );
+    const applied = Math.min(discount, subtotal);
+    const data = {
+      status: order.status,
+      subtotal,
+      discount: applied,
+      total: subtotal - applied,
+      createdAt: new Date(now - order.minutesAgo * 60_000),
+    };
+
+    await prisma.order.upsert({
+      where: {
+        userId_idempotencyKey: {
+          userId: user.id,
+          idempotencyKey: order.idempotencyKey,
+        },
+      },
+      update: { ...data, items: { deleteMany: {}, create: items } },
+      create: {
+        ...data,
+        userId: user.id,
+        idempotencyKey: order.idempotencyKey,
+        items: { create: items },
+      },
+    });
+  }
+}
+
 async function main(): Promise<void> {
   await seedUsers();
 
   const menuSeeded = await seedMenu();
+  await seedOrders();
 
   console.log(
-    `Seed finished: ${users.length} users, menu ${menuSeeded ? 'created' : 'already present, left unchanged'}.`,
+    `Seed finished: ${users.length} users, menu ${menuSeeded ? 'created' : 'already present, left unchanged'}, ${orders.length} demo orders reset.`,
   );
 }
 

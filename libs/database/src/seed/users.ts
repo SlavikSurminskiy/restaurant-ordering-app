@@ -20,4 +20,10 @@ export const users: SeedUser[] = [
     password: 'customer123',
     role: Role.CUSTOMER,
   },
+  {
+    email: 'alice@example.com',
+    name: 'Alice',
+    password: 'alice123',
+    role: Role.CUSTOMER,
+  },
 ];

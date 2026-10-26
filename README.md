@@ -22,6 +22,7 @@ Seeded users (local development only):
 | ---------------------- | ------------- | -------- |
 | `admin@example.com`    | `admin123`    | Admin    |
 | `customer@example.com` | `customer123` | Customer |
+| `alice@example.com`    | `alice123`    | Customer |
 
 ## Commands
 
