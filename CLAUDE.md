@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Restaurant ordering app: Nx 24 monorepo, Angular 22 frontend, NestJS 11 backend, PostgreSQL 18 via Prisma 7, pnpm 11. Human-facing docs: `README.md` (setup, commands) and `docs/architecture.md` (conventions). Keep both in sync with changes.
+Restaurant ordering app: Nx 24 monorepo, Angular 22 frontend, NestJS 11 backend, PostgreSQL 18 via Prisma 7, pnpm 11. Human-facing docs: `README.md` (overview, how to run), `docs/development.md` (commands, config, troubleshooting), `docs/architecture.md` (conventions), `docs/decisions.md` (decisions and trade-offs), `docs/production-readiness.md` (simplifications, roadmap). Keep them in sync with changes.
 
 ## Commands
 
