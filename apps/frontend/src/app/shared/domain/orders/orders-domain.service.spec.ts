@@ -17,6 +17,27 @@ import {
 import { OrdersDomainService } from './orders-domain.service';
 
 describe(OrdersDomainService.name, () => {
+  it('should get the orders', async () => {
+    const spies = Arrange.createSpies();
+    const service = Arrange.setup(spies);
+
+    await expect(firstValueFrom(service.getOrders())).resolves.toEqual([
+      Arrange.createOrder(),
+    ]);
+  });
+
+  it('should change the status of an order', async () => {
+    const spies = Arrange.createSpies();
+    const service = Arrange.setup(spies);
+
+    await expect(
+      firstValueFrom(service.updateOrderStatus('o-1', OrderStatus.Ready)),
+    ).resolves.toEqual(Arrange.createOrder());
+    expect(
+      spies.ordersDataAccessServiceMock.updateOrderStatus,
+    ).toHaveBeenCalledWith('o-1', { status: OrderStatus.Ready });
+  });
+
   it('should create the order with the idempotency key', async () => {
     const spies = Arrange.createSpies();
     const service = Arrange.setup(spies);
@@ -81,7 +102,11 @@ describe(OrdersDomainService.name, () => {
 });
 
 interface Spies {
-  ordersDataAccessServiceMock: { createOrder: Mock };
+  ordersDataAccessServiceMock: {
+    getOrders: Mock;
+    updateOrderStatus: Mock;
+    createOrder: Mock;
+  };
 }
 
 const Arrange = {
@@ -101,8 +126,15 @@ const Arrange = {
   createSpies(): Spies {
     return {
       ordersDataAccessServiceMock: {
+        getOrders: vi.fn().mockReturnValue(of([Arrange.createOrder()])),
+        updateOrderStatus: vi.fn().mockReturnValue(of(Arrange.createOrder())),
         createOrder: vi.fn().mockReturnValue(of(Arrange.createOrder())),
-      } satisfies Mocked<Pick<OrdersDataAccessService, 'createOrder'>>,
+      } satisfies Mocked<
+        Pick<
+          OrdersDataAccessService,
+          'getOrders' | 'updateOrderStatus' | 'createOrder'
+        >
+      >,
     };
   },
 

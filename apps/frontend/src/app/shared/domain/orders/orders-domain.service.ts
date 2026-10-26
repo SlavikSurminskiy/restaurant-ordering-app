@@ -9,7 +9,9 @@ import {
 import { ApiError } from '@restaurant/frontend/core/http';
 
 import {
+  OrderDomainModel,
   CreateOrderResult,
+  OrderStatusDomainModel,
   CreateOrderResultKind,
   CreateOrderDomainModel,
 } from './orders-domain.models';
@@ -17,6 +19,17 @@ import {
 @Service()
 export class OrdersDomainService {
   #ordersDataAccess = inject(OrdersDataAccessService);
+
+  getOrders(): Observable<OrderDomainModel[]> {
+    return this.#ordersDataAccess.getOrders();
+  }
+
+  updateOrderStatus(
+    id: string,
+    status: OrderStatusDomainModel,
+  ): Observable<OrderDomainModel> {
+    return this.#ordersDataAccess.updateOrderStatus(id, { status });
+  }
 
   createOrder(
     request: CreateOrderDomainModel,

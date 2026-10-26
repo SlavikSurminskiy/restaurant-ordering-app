@@ -1,10 +1,13 @@
 import type {
   Order,
+  OrderStatus,
   OrderConflict,
   CreateOrderRequest,
 } from '@restaurant/shared-api-types';
 
 export type OrderDomainModel = Order;
+
+export type OrderStatusDomainModel = OrderStatus;
 
 export type OrderConflictDomainModel = OrderConflict;
 
