@@ -25,6 +25,12 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./features/cart/cart').then((m) => m.Cart),
       },
       {
+        path: 'orders',
+        canMatch: [signedInGuard],
+        loadComponent: () =>
+          import('./features/orders/orders').then((m) => m.Orders),
+      },
+      {
         path: 'login',
         canMatch: [guestGuard],
         loadComponent: () =>

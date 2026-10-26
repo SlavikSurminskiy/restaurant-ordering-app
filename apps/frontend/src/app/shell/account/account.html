@@ -1,4 +1,5 @@
 @if (store.user(); as user) {
+  <a matButton routerLink="/orders">Orders</a>
   @if (store.isAdmin()) {
     <a matButton routerLink="/setup-menu">Setup menu</a>
   }

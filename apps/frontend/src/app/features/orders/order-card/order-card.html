@@ -1,0 +1,62 @@
+@let order = card().order;
+
+<header class="order-card__header">
+  <div>
+    <h2 class="order-card__title">Order {{ order.id.slice(0, 8) }}</h2>
+    <span class="order-card__meta">
+      {{ order.createdAt | date: 'short' }}
+      @if (canManage()) {
+        · {{ order.userName }}
+      }
+    </span>
+  </div>
+  <span
+    class="order-card__status"
+    [class]="'order-card__status--' + order.status.toLowerCase()"
+  >
+    {{ ORDER_STATUS_LABELS[order.status] }}
+  </span>
+</header>
+
+<ul class="order-card__items">
+  @for (item of order.items; track item.id) {
+    <li class="order-card__item">
+      <span>{{ item.quantity }} × {{ item.name }}</span>
+      <span>{{ item.unitPrice * item.quantity | money }}</span>
+    </li>
+  }
+</ul>
+
+<dl class="order-card__totals">
+  @if (order.discount > 0) {
+    <div class="order-card__total-row">
+      <dt>Discount</dt>
+      <dd>−{{ order.discount | money }}</dd>
+    </div>
+  }
+  <div class="order-card__total-row order-card__total-row--grand">
+    <dt>Total</dt>
+    <dd>{{ order.total | money }}</dd>
+  </div>
+</dl>
+
+@if (canManage() && card().nextStatus; as nextStatus) {
+  <div class="order-card__actions">
+    <button
+      matButton
+      type="button"
+      [disabled]="isUpdating()"
+      (click)="cancelOrder.emit()"
+    >
+      Cancel order
+    </button>
+    <button
+      matButton="filled"
+      type="button"
+      [disabled]="isUpdating()"
+      (click)="advance.emit(nextStatus)"
+    >
+      {{ NEXT_STATUS_ACTIONS[nextStatus] }}
+    </button>
+  </div>
+}

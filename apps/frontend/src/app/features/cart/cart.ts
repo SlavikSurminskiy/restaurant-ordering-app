@@ -169,7 +169,7 @@ export class Cart {
           'Close',
           { duration: 5000 },
         );
-        void this.#router.navigateByUrl('/menu');
+        void this.#router.navigateByUrl('/orders');
         break;
       case CreateOrderResultKind.Conflicts:
         // The server knows the menu changed, so the menu shown here is out of date.
