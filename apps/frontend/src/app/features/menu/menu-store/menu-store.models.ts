@@ -2,8 +2,9 @@ import type { NamedEntityState } from '@ngrx/signals/entities';
 
 import type { Category, Dish, MenuEvent } from '@restaurant/shared-api-types';
 import { MenuDomainModel } from '@restaurant/frontend/domain/menu';
+import { SnapshotSyncUpdate } from '@restaurant/frontend/core/realtime';
 
-import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
+import { LoadStatus } from './menu-store.enums';
 
 export interface MenuState {
   status: LoadStatus;
@@ -13,7 +14,4 @@ export interface MenuState {
 export type MenuEntitiesState = NamedEntityState<Category, 'category'> &
   NamedEntityState<Dish, 'dish'>;
 
-export type MenuUpdate =
-  | { kind: typeof MenuUpdateKind.Snapshot; menu: MenuDomainModel }
-  | { kind: typeof MenuUpdateKind.SnapshotFailed; error: unknown }
-  | { kind: typeof MenuUpdateKind.Event; event: MenuEvent };
+export type MenuUpdate = SnapshotSyncUpdate<MenuDomainModel, MenuEvent>;

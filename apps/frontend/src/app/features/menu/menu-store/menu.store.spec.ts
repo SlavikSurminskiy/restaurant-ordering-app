@@ -14,9 +14,12 @@ import {
   MenuDomainService,
 } from '@restaurant/frontend/domain/menu';
 import { ApiError } from '@restaurant/frontend/core/http';
-import { SseService } from '@restaurant/frontend/core/realtime';
+import {
+  SseService,
+  SnapshotSyncUpdateKind,
+} from '@restaurant/frontend/core/realtime';
 
-import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
+import { LoadStatus } from './menu-store.enums';
 import { MenuUpdate } from './menu-store.models';
 import { MenuStoreService } from './menu-store.service';
 import { MenuStore } from './menu.store';
@@ -225,12 +228,12 @@ const Arrange = {
   },
 
   createSnapshot(menu: MenuDomainModel = Arrange.createMenu()): MenuUpdate {
-    return { kind: MenuUpdateKind.Snapshot, menu };
+    return { kind: SnapshotSyncUpdateKind.Snapshot, snapshot: menu };
   },
 
   createSnapshotFailed(): MenuUpdate {
     return {
-      kind: MenuUpdateKind.SnapshotFailed,
+      kind: SnapshotSyncUpdateKind.SnapshotFailed,
       error: new ApiError(
         HttpStatusCode.NotFound,
         'The requested data was not found.',
@@ -239,7 +242,7 @@ const Arrange = {
   },
 
   createEvent(event: MenuEvent): MenuUpdate {
-    return { kind: MenuUpdateKind.Event, event };
+    return { kind: SnapshotSyncUpdateKind.Event, event };
   },
 
   createMenu(): MenuDomainModel {
