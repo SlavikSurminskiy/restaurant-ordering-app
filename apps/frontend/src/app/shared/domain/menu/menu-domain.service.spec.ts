@@ -1,11 +1,23 @@
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, Observable, of, Subject, throwError } from 'rxjs';
 import { Mock, Mocked, vi } from 'vitest';
 
-import { Dish } from '@restaurant/shared-api-types';
+import {
+  Dish,
+  Order,
+  MenuEvent,
+  ServerEvent,
+  MenuEventType,
+  OrderEventType,
+} from '@restaurant/shared-api-types';
 import { MenuDataAccessService } from '@restaurant/frontend/data-access/menu';
+import {
+  LiveResourceOptions,
+  LiveResourceFactoryService,
+} from '@restaurant/frontend/domain/sse';
+import { SseDataAccessService } from '@restaurant/frontend/data-access/sse';
 
-import { DiscountDomainModel } from './menu-domain.models';
+import { DiscountDomainModel, MenuDomainModel } from './menu-domain.models';
 import { MenuDomainService } from './menu-domain.service';
 
 describe(MenuDomainService.name, () => {
@@ -28,6 +40,55 @@ describe(MenuDomainService.name, () => {
       expect(spies.menuDataAccessServiceMock.getMenu).toHaveBeenCalledTimes(1);
 
       expect(response).toEqual({ categories: [salads], dishes: [caesar] });
+    });
+  });
+
+  describe('streamMenu', () => {
+    it('should stream the menu snapshot', async () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+
+      service.streamMenu().subscribe();
+      const { loadSnapshot } = Arrange.lastOptions(spies);
+
+      await expect(firstValueFrom(loadSnapshot())).resolves.toEqual({
+        categories: [],
+        dishes: [],
+      });
+    });
+
+    it('should pick only menu events', () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+      const menuEvent: ServerEvent = {
+        type: MenuEventType.DishDeleted,
+        dishId: 'd-caesar',
+      };
+      const received: unknown[] = [];
+      service.streamMenu().subscribe();
+      Arrange.lastOptions(spies).events$.subscribe((event) =>
+        received.push(event),
+      );
+
+      spies.serverEvents$.next({
+        type: OrderEventType.Created,
+        order: {} as Order,
+      });
+      spies.serverEvents$.next(menuEvent);
+
+      expect(received).toEqual([menuEvent]);
+    });
+
+    it('should reload the snapshot on request', () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+      const reloads = vi.fn();
+      service.streamMenu().subscribe();
+      Arrange.lastOptions(spies).reload$?.subscribe(reloads);
+
+      service.reloadMenu();
+
+      expect(reloads).toHaveBeenCalledOnce();
     });
   });
 
@@ -59,10 +120,17 @@ describe(MenuDomainService.name, () => {
   });
 });
 
+type MenuOptions = LiveResourceOptions<MenuDomainModel, MenuEvent>;
+
 interface Spies {
   menuDataAccessServiceMock: {
     getMenu: Mock;
     getDiscount: Mock;
+  };
+  serverEvents$: Subject<ServerEvent>;
+  sseDataAccessServiceMock: { serverEvents: Mock };
+  liveResourceFactoryServiceMock: {
+    create: Mock<(options: MenuOptions) => Observable<unknown>>;
   };
 }
 
@@ -74,6 +142,14 @@ const Arrange = {
           provide: MenuDataAccessService,
           useValue: spies.menuDataAccessServiceMock,
         },
+        {
+          provide: SseDataAccessService,
+          useValue: spies.sseDataAccessServiceMock,
+        },
+        {
+          provide: LiveResourceFactoryService,
+          useValue: spies.liveResourceFactoryServiceMock,
+        },
       ],
     });
 
@@ -81,6 +157,8 @@ const Arrange = {
   },
 
   createSpies(): Spies {
+    const serverEvents$ = new Subject<ServerEvent>();
+
     return {
       menuDataAccessServiceMock: {
         getMenu: vi.fn().mockReturnValue(of({ categories: [], dishes: [] })),
@@ -88,7 +166,25 @@ const Arrange = {
       } satisfies Mocked<
         Pick<MenuDataAccessService, 'getMenu' | 'getDiscount'>
       >,
+      serverEvents$,
+      sseDataAccessServiceMock: {
+        serverEvents: vi.fn(() => serverEvents$.asObservable()),
+      },
+      liveResourceFactoryServiceMock: {
+        create: vi.fn(() => new Subject<never>()),
+      },
     };
+  },
+
+  /** The options the menu stream was created with. */
+  lastOptions(spies: Spies): MenuOptions {
+    const options = spies.liveResourceFactoryServiceMock.create.mock.lastCall;
+
+    if (!options) {
+      throw new Error('The menu stream was not created');
+    }
+
+    return options[0];
   },
 
   createDish(

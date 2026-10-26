@@ -11,7 +11,6 @@ import {
   AuthUserDomainModel,
   AuthDomainService,
 } from '@restaurant/frontend/domain/auth';
-import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { AuthStore } from '../../features/auth/auth-store/auth.store';
 
@@ -83,16 +82,6 @@ describe(Account.name, () => {
       expect(spies.authStoreMock.clearUser).toHaveBeenCalledOnce();
     });
 
-    it('should reconnect the event stream after sign-out', async () => {
-      const user = Arrange.setupUser();
-      const spies = Arrange.createSpies(Arrange.createUser());
-      const { renderResult } = await Arrange.setup(spies);
-
-      await user.click(renderResult.getByRole('button', { name: 'Sign out' }));
-
-      expect(spies.sseServiceMock.reconnect).toHaveBeenCalledOnce();
-    });
-
     it('should go to the menu after sign-out', async () => {
       const user = Arrange.setupUser();
       const spies = Arrange.createSpies(Arrange.createUser());
@@ -107,7 +96,6 @@ describe(Account.name, () => {
 
 interface Spies {
   authDomainServiceMock: { logout: Mock };
-  sseServiceMock: { reconnect: Mock };
   authStoreMock: {
     user: WritableSignal<AuthUserDomainModel | null>;
     isAdmin: Signal<boolean>;
@@ -121,7 +109,6 @@ const Arrange = {
       providers: [
         provideRouter([]),
         { provide: AuthDomainService, useValue: spies.authDomainServiceMock },
-        { provide: SseService, useValue: spies.sseServiceMock },
         { provide: AuthStore, useValue: spies.authStoreMock },
       ],
     });
@@ -144,9 +131,6 @@ const Arrange = {
       authDomainServiceMock: {
         logout: vi.fn().mockReturnValue(of(undefined)),
       } satisfies Mocked<Pick<AuthDomainService, 'logout'>>,
-      sseServiceMock: {
-        reconnect: vi.fn(),
-      } satisfies Mocked<Pick<SseService, 'reconnect'>>,
       authStoreMock: {
         user: userSignal,
         isAdmin: computed(() => userSignal()?.role === UserRole.Admin),

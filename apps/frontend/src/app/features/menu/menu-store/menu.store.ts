@@ -1,5 +1,6 @@
 import { computed, inject } from '@angular/core';
 import {
+  withHooks,
   withState,
   withProps,
   patchState,
@@ -7,16 +8,18 @@ import {
   withMethods,
   withComputed,
 } from '@ngrx/signals';
-import { setAllEntities, withEntities } from '@ngrx/signals/entities';
+import { withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap } from 'rxjs';
+import { tap } from 'rxjs';
 
-import { errorMessage } from '@restaurant/frontend/core/http';
-import { SnapshotSyncUpdateKind } from '@restaurant/frontend/core/realtime';
+import {
+  MenuStreamUpdate,
+  MenuDomainService,
+} from '@restaurant/frontend/domain/menu';
 
 import { categoryConfig, dishConfig } from './menu-store.constants';
 import { LoadStatus } from './menu-store.enums';
-import { MenuState, MenuUpdate } from './menu-store.models';
+import { MenuState } from './menu-store.models';
 import { MenuStoreService } from './menu-store.service';
 
 const initialState: MenuState = {
@@ -31,6 +34,7 @@ export const MenuStore = signalStore(
   withEntities(dishConfig),
   withProps(() => ({
     _menuStoreService: inject(MenuStoreService),
+    _menuDomainService: inject(MenuDomainService),
   })),
   withComputed(({ categoryEntities, dishEntities, _menuStoreService }) => ({
     sections: computed(() =>
@@ -38,40 +42,18 @@ export const MenuStore = signalStore(
     ),
   })),
   withMethods((store) => ({
-    _applyUpdate(update: MenuUpdate): void {
-      switch (update.kind) {
-        case SnapshotSyncUpdateKind.Snapshot:
-          patchState(
-            store,
-            setAllEntities(update.snapshot.categories, categoryConfig),
-            setAllEntities(update.snapshot.dishes, dishConfig),
-            { status: LoadStatus.Loaded, error: null },
-          );
-          break;
-        case SnapshotSyncUpdateKind.SnapshotFailed:
-          // A shown menu stays on screen while the reload is retried.
-          if (store.status() !== LoadStatus.Loaded) {
-            patchState(store, {
-              status: LoadStatus.Error,
-              error: errorMessage(update.error),
-            });
-          }
-          break;
-        case SnapshotSyncUpdateKind.Event:
-          patchState(store, store._menuStoreService.eventUpdater(update.event));
-          break;
-      }
-    },
-  })),
-  withMethods((store) => ({
-    keepMenuUpToDate: rxMethod<void>(
-      pipe(
-        switchMap(() => store._menuStoreService.menuUpdates()),
-        tap((update) => store._applyUpdate(update)),
+    processMenuStream: rxMethod<MenuStreamUpdate>(
+      tap((update) =>
+        patchState(store, store._menuStoreService.menuStreamUpdater(update)),
       ),
     ),
     reloadMenu(): void {
-      store._menuStoreService.reload();
+      store._menuDomainService.reloadMenu();
     },
   })),
+  withHooks({
+    onInit(store) {
+      store.processMenuStream(store._menuDomainService.streamMenu());
+    },
+  }),
 );

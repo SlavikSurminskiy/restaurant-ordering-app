@@ -1,71 +1,16 @@
 import { TestBed } from '@angular/core/testing';
-import { of, Subject } from 'rxjs';
-import type { Mock, Mocked } from 'vitest';
-import { vi } from 'vitest';
+import type { PartialStateUpdater } from '@ngrx/signals';
 
-import {
-  OrderStatus,
-  ServerEvent,
-  MenuEventType,
-  OrderEventType,
-} from '@restaurant/shared-api-types';
-import {
-  OrderDomainModel,
-  OrdersDomainService,
-} from '@restaurant/frontend/domain/orders';
-import {
-  SseService,
-  SnapshotSyncUpdateKind,
-} from '@restaurant/frontend/core/realtime';
+import { OrderEventType, OrderStatus } from '@restaurant/shared-api-types';
+import { OrderDomainModel } from '@restaurant/frontend/domain/orders';
+import { LiveResourceUpdateKind } from '@restaurant/frontend/domain/sse';
 
-import { OrderUpdate } from './orders-store.models';
+import { LoadStatus } from '../../menu/menu-store/menu-store.enums';
+
+import { OrdersStoreState } from './orders-store.models';
 import { OrdersStoreService } from './orders-store.service';
 
 describe(OrdersStoreService.name, () => {
-  describe('orderUpdates', () => {
-    it('should load the orders when the event stream opens', () => {
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      const received: OrderUpdate[] = [];
-      service.orderUpdates().subscribe((update) => received.push(update));
-
-      spies.sseServiceMock.opened$.next();
-
-      expect(received).toEqual([
-        {
-          kind: SnapshotSyncUpdateKind.Snapshot,
-          snapshot: [Arrange.createOrder()],
-        },
-      ]);
-    });
-
-    it('should pass on order events and ignore menu events', () => {
-      const orderEvent: ServerEvent = {
-        type: OrderEventType.Updated,
-        order: Arrange.createOrder({ status: OrderStatus.Ready }),
-      };
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      const received: OrderUpdate[] = [];
-      service.orderUpdates().subscribe((update) => received.push(update));
-      spies.sseServiceMock.opened$.next();
-
-      spies.sseServiceMock.events$.next({
-        type: MenuEventType.DishDeleted,
-        dishId: 'd-caesar',
-      });
-      spies.sseServiceMock.events$.next(orderEvent);
-
-      expect(received).toEqual([
-        {
-          kind: SnapshotSyncUpdateKind.Snapshot,
-          snapshot: [Arrange.createOrder()],
-        },
-        { kind: SnapshotSyncUpdateKind.Event, event: orderEvent },
-      ]);
-    });
-  });
-
   it('should sort the orders newest first', () => {
     const service = Arrange.setup();
     const older = Arrange.createOrder({
@@ -80,70 +25,142 @@ describe(OrdersStoreService.name, () => {
     expect(service.sortNewestFirst([older, newer])).toEqual([newer, older]);
   });
 
-  describe('isNewer', () => {
-    it('should take an order it does not have yet', () => {
+  describe('ordersStreamUpdater', () => {
+    it('should show the orders of a snapshot', () => {
+      const service = Arrange.setup();
+      const order = Arrange.createOrder();
+
+      const state = Arrange.apply(
+        service.ordersStreamUpdater({
+          kind: LiveResourceUpdateKind.Snapshot,
+          snapshot: [order],
+        }),
+        Arrange.createState([], LoadStatus.Loading),
+      );
+
+      expect(state).toEqual(Arrange.createState([order], LoadStatus.Loaded));
+    });
+
+    it('should show a readable error while there are no orders', () => {
       const service = Arrange.setup();
 
-      expect(service.isNewer(Arrange.createOrder(), undefined)).toBe(true);
+      const state = Arrange.apply(
+        service.ordersStreamUpdater({
+          kind: LiveResourceUpdateKind.SnapshotFailed,
+          error: new Error('Failed'),
+        }),
+        Arrange.createState([], LoadStatus.Loading),
+      );
+
+      expect(state.status).toBe(LoadStatus.Error);
+      expect(state.error).toBe('Something went wrong. Please try again.');
+    });
+
+    it('should keep shown orders when a reload fails', () => {
+      const service = Arrange.setup();
+      const shown = Arrange.createState(
+        [Arrange.createOrder()],
+        LoadStatus.Loaded,
+      );
+
+      const state = Arrange.apply(
+        service.ordersStreamUpdater({
+          kind: LiveResourceUpdateKind.SnapshotFailed,
+          error: new Error('Failed'),
+        }),
+        shown,
+      );
+
+      expect(state).toEqual(shown);
+    });
+
+    it('should take the order of an event', () => {
+      const service = Arrange.setup();
+      const ready = Arrange.createOrder({
+        status: OrderStatus.Ready,
+        updatedAt: '2026-10-25T10:00:20.000Z',
+      });
+
+      const state = Arrange.apply(
+        service.ordersStreamUpdater({
+          kind: LiveResourceUpdateKind.Event,
+          event: { type: OrderEventType.Updated, order: ready },
+        }),
+        Arrange.createState([Arrange.createOrder()], LoadStatus.Loaded),
+      );
+
+      expect(state.orderEntityMap['o-1']).toEqual(ready);
+    });
+  });
+
+  describe('orderUpdater', () => {
+    it('should add an order it does not have yet', () => {
+      const service = Arrange.setup();
+      const order = Arrange.createOrder();
+
+      const state = Arrange.apply(
+        service.orderUpdater(order),
+        Arrange.createState([], LoadStatus.Loaded),
+      );
+
+      expect(state.orderIds).toEqual(['o-1']);
     });
 
     it('should take a later state of an order', () => {
       const service = Arrange.setup();
+      const later = Arrange.createOrder({
+        updatedAt: '2026-10-25T10:00:20.000Z',
+      });
 
-      expect(
-        service.isNewer(
-          Arrange.createOrder({ updatedAt: '2026-10-25T10:00:20.000Z' }),
-          Arrange.createOrder(),
-        ),
-      ).toBe(true);
+      const state = Arrange.apply(
+        service.orderUpdater(later),
+        Arrange.createState([Arrange.createOrder()], LoadStatus.Loaded),
+      );
+
+      expect(state.orderEntityMap['o-1']).toEqual(later);
     });
 
-    it('should not take an earlier state of an order', () => {
+    it('should not go back to an earlier state of an order', () => {
       const service = Arrange.setup();
+      const later = Arrange.createOrder({
+        updatedAt: '2026-10-25T10:00:20.000Z',
+      });
 
-      expect(
-        service.isNewer(
-          Arrange.createOrder(),
-          Arrange.createOrder({ updatedAt: '2026-10-25T10:00:20.000Z' }),
-        ),
-      ).toBe(false);
+      const state = Arrange.apply(
+        service.orderUpdater(Arrange.createOrder()),
+        Arrange.createState([later], LoadStatus.Loaded),
+      );
+
+      expect(state.orderEntityMap['o-1']).toEqual(later);
     });
   });
 });
 
-interface Spies {
-  ordersDomainServiceMock: { getOrders: Mock };
-  sseServiceMock: {
-    opened$: Subject<void>;
-    events$: Subject<ServerEvent>;
-  };
-}
-
 const Arrange = {
-  setup(spies: Spies = Arrange.createSpies()) {
-    TestBed.configureTestingModule({
-      providers: [
-        OrdersStoreService,
-        {
-          provide: OrdersDomainService,
-          useValue: spies.ordersDomainServiceMock,
-        },
-        { provide: SseService, useValue: spies.sseServiceMock },
-      ],
-    });
+  setup() {
+    TestBed.configureTestingModule({ providers: [OrdersStoreService] });
 
     return TestBed.inject(OrdersStoreService);
   },
 
-  createSpies(): Spies {
+  apply(
+    updater: PartialStateUpdater<OrdersStoreState>,
+    state: OrdersStoreState,
+  ): OrdersStoreState {
+    return { ...state, ...updater(state) };
+  },
+
+  createState(
+    orders: OrderDomainModel[],
+    status: LoadStatus,
+  ): OrdersStoreState {
     return {
-      ordersDomainServiceMock: {
-        getOrders: vi.fn().mockReturnValue(of([Arrange.createOrder()])),
-      } satisfies Mocked<Pick<OrdersDomainService, 'getOrders'>>,
-      sseServiceMock: {
-        opened$: new Subject<void>(),
-        events$: new Subject<ServerEvent>(),
-      } satisfies Pick<SseService, 'opened$' | 'events$'>,
+      status,
+      error: null,
+      orderIds: orders.map(({ id }) => id),
+      orderEntityMap: Object.fromEntries(
+        orders.map((order) => [order.id, order]),
+      ),
     };
   },
 

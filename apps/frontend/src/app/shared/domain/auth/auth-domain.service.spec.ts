@@ -6,12 +6,53 @@ import { vi } from 'vitest';
 
 import { UserRole } from '@restaurant/shared-api-types';
 import { AuthDataAccessService } from '@restaurant/frontend/data-access/auth';
+import { SseDataAccessService } from '@restaurant/frontend/data-access/sse';
 import { ApiError } from '@restaurant/frontend/core/http';
 
 import { AuthUserDomainModel } from './auth-domain.models';
 import { AuthDomainService } from './auth-domain.service';
 
 describe(AuthDomainService.name, () => {
+  describe('event stream', () => {
+    it('should reconnect the event stream after a login', async () => {
+      const spies = Arrange.createSpies();
+      spies.authDataAccessServiceMock.login.mockReturnValue(
+        of(Arrange.createUser()),
+      );
+      const service = Arrange.setup(spies);
+
+      await firstValueFrom(
+        service.login({ email: 'admin@example.com', password: 'admin123' }),
+      );
+
+      expect(spies.sseDataAccessServiceMock.reconnect).toHaveBeenCalledOnce();
+    });
+
+    it('should not reconnect after a failed login', async () => {
+      const spies = Arrange.createSpies();
+      spies.authDataAccessServiceMock.login.mockReturnValue(
+        throwError(() => new ApiError(HttpStatusCode.Unauthorized, 'x')),
+      );
+      const service = Arrange.setup(spies);
+
+      await expect(
+        firstValueFrom(
+          service.login({ email: 'admin@example.com', password: 'wrong' }),
+        ),
+      ).rejects.toBeInstanceOf(ApiError);
+      expect(spies.sseDataAccessServiceMock.reconnect).not.toHaveBeenCalled();
+    });
+
+    it('should reconnect the event stream after a logout', async () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+
+      await firstValueFrom(service.logout(), { defaultValue: undefined });
+
+      expect(spies.sseDataAccessServiceMock.reconnect).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('getCurrentUser', () => {
     it('should return the signed-in user', async () => {
       const user = Arrange.createUser();
@@ -53,6 +94,7 @@ describe(AuthDomainService.name, () => {
 
 interface Spies {
   authDataAccessServiceMock: { login: Mock; logout: Mock; getMe: Mock };
+  sseDataAccessServiceMock: { reconnect: Mock };
 }
 
 const Arrange = {
@@ -62,6 +104,10 @@ const Arrange = {
         {
           provide: AuthDataAccessService,
           useValue: spies.authDataAccessServiceMock,
+        },
+        {
+          provide: SseDataAccessService,
+          useValue: spies.sseDataAccessServiceMock,
         },
       ],
     });
@@ -78,6 +124,9 @@ const Arrange = {
       } satisfies Mocked<
         Pick<AuthDataAccessService, 'login' | 'logout' | 'getMe'>
       >,
+      sseDataAccessServiceMock: {
+        reconnect: vi.fn(),
+      } satisfies Mocked<Pick<SseDataAccessService, 'reconnect'>>,
     };
   },
 

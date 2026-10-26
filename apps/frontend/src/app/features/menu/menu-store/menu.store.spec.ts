@@ -1,6 +1,7 @@
 import { HttpStatusCode } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
 import {
@@ -11,54 +12,40 @@ import {
 } from '@restaurant/shared-api-types';
 import {
   MenuDomainModel,
+  MenuStreamUpdate,
   MenuDomainService,
 } from '@restaurant/frontend/domain/menu';
 import { ApiError } from '@restaurant/frontend/core/http';
-import {
-  SseService,
-  SnapshotSyncUpdateKind,
-} from '@restaurant/frontend/core/realtime';
+import { LiveResourceUpdateKind } from '@restaurant/frontend/domain/sse';
 
 import { LoadStatus } from './menu-store.enums';
-import { MenuUpdate } from './menu-store.models';
-import { MenuStoreService } from './menu-store.service';
 import { MenuStore } from './menu.store';
 
 describe('MenuStore', () => {
-  it('should ask the service for a fresh snapshot', () => {
-    const store = Arrange.setup(Arrange.createSpies());
-    const reloadSpy = vi
-      .spyOn(TestBed.inject(MenuStoreService), 'reload')
-      .mockReturnValue(undefined);
+  it('should ask the domain for a fresh snapshot', () => {
+    const spies = Arrange.createSpies();
+    const store = Arrange.setup(spies);
 
     store.reloadMenu();
 
-    expect(reloadSpy).toHaveBeenCalledOnce();
+    expect(spies.menuDomainServiceMock.reloadMenu).toHaveBeenCalledOnce();
   });
 
-  describe('keepMenuUpToDate', () => {
+  describe('menu stream', () => {
+    it('should start streaming the menu once it is created', () => {
+      const spies = Arrange.createSpies();
+
+      Arrange.setup(spies);
+
+      expect(spies.menuDomainServiceMock.streamMenu).toHaveBeenCalledOnce();
+    });
+
     it('should be loading until the first snapshot', () => {
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
 
-      store.keepMenuUpToDate();
-
       expect(store.status()).toBe(LoadStatus.Loading);
       expect(store.sections()).toEqual([]);
-    });
-
-    it('should follow the menu updates of the service', () => {
-      const spies = Arrange.createSpies();
-      const store = Arrange.setup(spies);
-
-      store.keepMenuUpToDate();
-      spies.menuUpdates$.next(Arrange.createSnapshot());
-
-      expect(
-        TestBed.inject(MenuStoreService).menuUpdates,
-      ).toHaveBeenCalledOnce();
-
-      expect(store.status()).toBe(LoadStatus.Loaded);
     });
   });
 
@@ -68,9 +55,8 @@ describe('MenuStore', () => {
       const caesar = Arrange.createDish();
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
-      store.keepMenuUpToDate();
 
-      spies.menuUpdates$.next(Arrange.createSnapshot());
+      spies.menuStream$.next(Arrange.createSnapshot());
 
       expect(store.status()).toBe(LoadStatus.Loaded);
 
@@ -82,13 +68,12 @@ describe('MenuStore', () => {
     it('should show a readable error while there is no menu, until a snapshot loads', () => {
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
-      store.keepMenuUpToDate();
 
-      spies.menuUpdates$.next(Arrange.createSnapshotFailed());
+      spies.menuStream$.next(Arrange.createSnapshotFailed());
       expect(store.status()).toBe(LoadStatus.Error);
       expect(store.error()).toBe('The requested data was not found.');
 
-      spies.menuUpdates$.next(Arrange.createSnapshot());
+      spies.menuStream$.next(Arrange.createSnapshot());
       expect(store.status()).toBe(LoadStatus.Loaded);
       expect(store.error()).toBeNull();
     });
@@ -97,10 +82,9 @@ describe('MenuStore', () => {
       const caesar = Arrange.createDish();
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
-      store.keepMenuUpToDate();
-      spies.menuUpdates$.next(Arrange.createSnapshot());
+      spies.menuStream$.next(Arrange.createSnapshot());
 
-      spies.menuUpdates$.next(Arrange.createSnapshotFailed());
+      spies.menuStream$.next(Arrange.createSnapshotFailed());
 
       expect(store.status()).toBe(LoadStatus.Loaded);
       expect(store.error()).toBeNull();
@@ -110,10 +94,9 @@ describe('MenuStore', () => {
     it('should replace the whole menu with a newer snapshot', () => {
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
-      store.keepMenuUpToDate();
-      spies.menuUpdates$.next(Arrange.createSnapshot());
+      spies.menuStream$.next(Arrange.createSnapshot());
 
-      spies.menuUpdates$.next(
+      spies.menuStream$.next(
         Arrange.createSnapshot({ categories: [], dishes: [] }),
       );
 
@@ -128,10 +111,9 @@ describe('MenuStore', () => {
       const repriced = Arrange.createDish({ price: 1500, available: false });
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
-      store.keepMenuUpToDate();
-      spies.menuUpdates$.next(Arrange.createSnapshot());
+      spies.menuStream$.next(Arrange.createSnapshot());
 
-      spies.menuUpdates$.next(
+      spies.menuStream$.next(
         Arrange.createEvent({
           type: MenuEventType.DishUpserted,
           dish: repriced,
@@ -152,10 +134,9 @@ describe('MenuStore', () => {
       });
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
-      store.keepMenuUpToDate();
-      spies.menuUpdates$.next(Arrange.createSnapshot());
+      spies.menuStream$.next(Arrange.createSnapshot());
 
-      spies.menuUpdates$.next(
+      spies.menuStream$.next(
         Arrange.createEvent({
           type: MenuEventType.DishUpserted,
           dish: borscht,
@@ -164,7 +145,7 @@ describe('MenuStore', () => {
       expect(store.sections()).toHaveLength(1);
       expect(store.dishEntities()).toContainEqual(borscht);
 
-      spies.menuUpdates$.next(
+      spies.menuStream$.next(
         Arrange.createEvent({
           type: MenuEventType.CategoryUpserted,
           category: soups,
@@ -181,16 +162,15 @@ describe('MenuStore', () => {
       const caesar = Arrange.createDish();
       const spies = Arrange.createSpies();
       const store = Arrange.setup(spies);
-      store.keepMenuUpToDate();
-      spies.menuUpdates$.next(Arrange.createSnapshot());
+      spies.menuStream$.next(Arrange.createSnapshot());
 
-      spies.menuUpdates$.next(
+      spies.menuStream$.next(
         Arrange.createEvent({
           type: MenuEventType.DishDeleted,
           dishId: caesar.id,
         }),
       );
-      spies.menuUpdates$.next(
+      spies.menuStream$.next(
         Arrange.createEvent({
           type: MenuEventType.CategoryDeleted,
           categoryId: salads.id,
@@ -204,36 +184,42 @@ describe('MenuStore', () => {
 });
 
 interface Spies {
-  menuUpdates$: Subject<MenuUpdate>;
+  menuStream$: Subject<MenuStreamUpdate>;
+  menuDomainServiceMock: { streamMenu: Mock; reloadMenu: Mock };
 }
 
 const Arrange = {
   setup(spies: Spies) {
     TestBed.configureTestingModule({
       providers: [
-        { provide: MenuDomainService, useValue: {} },
-        { provide: SseService, useValue: {} },
+        { provide: MenuDomainService, useValue: spies.menuDomainServiceMock },
       ],
     });
-
-    vi.spyOn(TestBed.inject(MenuStoreService), 'menuUpdates').mockReturnValue(
-      spies.menuUpdates$,
-    );
 
     return TestBed.inject(MenuStore);
   },
 
   createSpies(): Spies {
-    return { menuUpdates$: new Subject<MenuUpdate>() };
-  },
+    const menuStream$ = new Subject<MenuStreamUpdate>();
 
-  createSnapshot(menu: MenuDomainModel = Arrange.createMenu()): MenuUpdate {
-    return { kind: SnapshotSyncUpdateKind.Snapshot, snapshot: menu };
-  },
-
-  createSnapshotFailed(): MenuUpdate {
     return {
-      kind: SnapshotSyncUpdateKind.SnapshotFailed,
+      menuStream$,
+      menuDomainServiceMock: {
+        streamMenu: vi.fn(() => menuStream$.asObservable()),
+        reloadMenu: vi.fn(),
+      },
+    };
+  },
+
+  createSnapshot(
+    menu: MenuDomainModel = Arrange.createMenu(),
+  ): MenuStreamUpdate {
+    return { kind: LiveResourceUpdateKind.Snapshot, snapshot: menu };
+  },
+
+  createSnapshotFailed(): MenuStreamUpdate {
+    return {
+      kind: LiveResourceUpdateKind.SnapshotFailed,
       error: new ApiError(
         HttpStatusCode.NotFound,
         'The requested data was not found.',
@@ -241,8 +227,8 @@ const Arrange = {
     };
   },
 
-  createEvent(event: MenuEvent): MenuUpdate {
-    return { kind: SnapshotSyncUpdateKind.Event, event };
+  createEvent(event: MenuEvent): MenuStreamUpdate {
+    return { kind: LiveResourceUpdateKind.Event, event };
   },
 
   createMenu(): MenuDomainModel {

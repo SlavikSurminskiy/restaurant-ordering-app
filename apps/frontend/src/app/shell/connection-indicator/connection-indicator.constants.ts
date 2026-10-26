@@ -1,4 +1,4 @@
-import { SseConnectionStatus } from '@restaurant/frontend/core/realtime';
+import { SseConnectionStatus } from '@restaurant/frontend/domain/sse';
 
 import { StatusView } from './connection-indicator.models';
 

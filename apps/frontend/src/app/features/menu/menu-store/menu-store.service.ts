@@ -1,34 +1,30 @@
-import { inject, Service } from '@angular/core';
+import { Service } from '@angular/core';
 import type { PartialStateUpdater } from '@ngrx/signals';
-import { removeEntity, setEntity } from '@ngrx/signals/entities';
-import { Observable, Subject } from 'rxjs';
+import {
+  setEntity,
+  removeEntity,
+  setAllEntities,
+} from '@ngrx/signals/entities';
 
 import {
   MenuEventType,
   type Category,
   type Dish,
   type MenuEvent,
-  type ServerEvent,
 } from '@restaurant/shared-api-types';
 import {
-  MenuDomainService,
+  MenuStreamUpdate,
   MenuSectionDomainModel,
 } from '@restaurant/frontend/domain/menu';
-import { SnapshotSyncService } from '@restaurant/frontend/core/realtime';
+import { LiveResourceUpdateKind } from '@restaurant/frontend/domain/sse';
+import { errorMessage } from '@restaurant/frontend/core/http';
 
-import {
-  dishConfig,
-  categoryConfig,
-  MENU_EVENT_TYPES,
-} from './menu-store.constants';
-import { MenuEntitiesState, MenuUpdate } from './menu-store.models';
+import { dishConfig, categoryConfig } from './menu-store.constants';
+import { LoadStatus } from './menu-store.enums';
+import { MenuEntitiesState, MenuStoreState } from './menu-store.models';
 
 @Service()
 export class MenuStoreService {
-  readonly #menuDomainService = inject(MenuDomainService);
-  readonly #snapshotSyncService = inject(SnapshotSyncService);
-  readonly #reloadRequests = new Subject<void>();
-
   buildSections(
     categories: Category[],
     dishes: Dish[],
@@ -47,19 +43,29 @@ export class MenuStoreService {
     }));
   }
 
-  menuUpdates(): Observable<MenuUpdate> {
-    return this.#snapshotSyncService.sync({
-      loadSnapshot: () => this.#menuDomainService.getMenu(),
-      isEvent: (event): event is MenuEvent => this.#isMenuEvent(event),
-      reload$: this.#reloadRequests,
-    });
+  menuStreamUpdater(
+    update: MenuStreamUpdate,
+  ): PartialStateUpdater<MenuStoreState> {
+    switch (update.kind) {
+      case LiveResourceUpdateKind.Snapshot:
+        return (state) => ({
+          ...setAllEntities(update.snapshot.categories, categoryConfig)(state),
+          ...setAllEntities(update.snapshot.dishes, dishConfig)(state),
+          status: LoadStatus.Loaded,
+          error: null,
+        });
+      case LiveResourceUpdateKind.SnapshotFailed:
+        // A shown menu stays on screen while the reload is retried.
+        return (state) =>
+          state.status === LoadStatus.Loaded
+            ? {}
+            : { status: LoadStatus.Error, error: errorMessage(update.error) };
+      case LiveResourceUpdateKind.Event:
+        return this.#eventUpdater(update.event);
+    }
   }
 
-  reload(): void {
-    this.#reloadRequests.next();
-  }
-
-  eventUpdater(event: MenuEvent): PartialStateUpdater<MenuEntitiesState> {
+  #eventUpdater(event: MenuEvent): PartialStateUpdater<MenuEntitiesState> {
     switch (event.type) {
       case MenuEventType.CategoryUpserted:
         return setEntity(event.category, categoryConfig);
@@ -70,9 +76,5 @@ export class MenuStoreService {
       case MenuEventType.DishDeleted:
         return removeEntity(event.dishId, dishConfig);
     }
-  }
-
-  #isMenuEvent(event: ServerEvent): event is MenuEvent {
-    return MENU_EVENT_TYPES.includes(event.type);
   }
 }

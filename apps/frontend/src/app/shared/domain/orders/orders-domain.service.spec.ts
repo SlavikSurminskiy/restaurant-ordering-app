@@ -1,12 +1,24 @@
 import { HttpStatusCode } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, Observable, of, Subject, throwError } from 'rxjs';
 import type { Mock, Mocked } from 'vitest';
 import { vi } from 'vitest';
 
-import { OrderStatus, OrderConflictReason } from '@restaurant/shared-api-types';
+import {
+  OrderEvent,
+  ServerEvent,
+  OrderStatus,
+  MenuEventType,
+  OrderEventType,
+  OrderConflictReason,
+} from '@restaurant/shared-api-types';
 import { ApiError } from '@restaurant/frontend/core/http';
 import { OrdersDataAccessService } from '@restaurant/frontend/data-access/orders';
+import {
+  LiveResourceOptions,
+  LiveResourceFactoryService,
+} from '@restaurant/frontend/domain/sse';
+import { SseDataAccessService } from '@restaurant/frontend/data-access/sse';
 
 import {
   OrderDomainModel,
@@ -17,6 +29,54 @@ import {
 import { OrdersDomainService } from './orders-domain.service';
 
 describe(OrdersDomainService.name, () => {
+  describe('streamOrders', () => {
+    it('should stream the orders snapshot', async () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+
+      service.streamOrders().subscribe();
+      const { loadSnapshot } = Arrange.lastOptions(spies);
+
+      await expect(firstValueFrom(loadSnapshot())).resolves.toEqual([
+        Arrange.createOrder(),
+      ]);
+    });
+
+    it('should pick only order events', () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+      const orderEvent: ServerEvent = {
+        type: OrderEventType.Updated,
+        order: Arrange.createOrder(),
+      };
+      const received: unknown[] = [];
+      service.streamOrders().subscribe();
+      Arrange.lastOptions(spies).events$.subscribe((event) =>
+        received.push(event),
+      );
+
+      spies.serverEvents$.next({
+        type: MenuEventType.DishDeleted,
+        dishId: 'd-caesar',
+      });
+      spies.serverEvents$.next(orderEvent);
+
+      expect(received).toEqual([orderEvent]);
+    });
+
+    it('should reload the snapshot on request', () => {
+      const spies = Arrange.createSpies();
+      const service = Arrange.setup(spies);
+      const reloads = vi.fn();
+      service.streamOrders().subscribe();
+      Arrange.lastOptions(spies).reload$?.subscribe(reloads);
+
+      service.reloadOrders();
+
+      expect(reloads).toHaveBeenCalledOnce();
+    });
+  });
+
   it('should get the orders', async () => {
     const spies = Arrange.createSpies();
     const service = Arrange.setup(spies);
@@ -101,11 +161,18 @@ describe(OrdersDomainService.name, () => {
   });
 });
 
+type OrdersOptions = LiveResourceOptions<OrderDomainModel[], OrderEvent>;
+
 interface Spies {
   ordersDataAccessServiceMock: {
     getOrders: Mock;
     updateOrderStatus: Mock;
     createOrder: Mock;
+  };
+  serverEvents$: Subject<ServerEvent>;
+  sseDataAccessServiceMock: { serverEvents: Mock };
+  liveResourceFactoryServiceMock: {
+    create: Mock<(options: OrdersOptions) => Observable<unknown>>;
   };
 }
 
@@ -117,6 +184,14 @@ const Arrange = {
           provide: OrdersDataAccessService,
           useValue: spies.ordersDataAccessServiceMock,
         },
+        {
+          provide: SseDataAccessService,
+          useValue: spies.sseDataAccessServiceMock,
+        },
+        {
+          provide: LiveResourceFactoryService,
+          useValue: spies.liveResourceFactoryServiceMock,
+        },
       ],
     });
 
@@ -124,6 +199,8 @@ const Arrange = {
   },
 
   createSpies(): Spies {
+    const serverEvents$ = new Subject<ServerEvent>();
+
     return {
       ordersDataAccessServiceMock: {
         getOrders: vi.fn().mockReturnValue(of([Arrange.createOrder()])),
@@ -135,7 +212,25 @@ const Arrange = {
           'getOrders' | 'updateOrderStatus' | 'createOrder'
         >
       >,
+      serverEvents$,
+      sseDataAccessServiceMock: {
+        serverEvents: vi.fn(() => serverEvents$.asObservable()),
+      },
+      liveResourceFactoryServiceMock: {
+        create: vi.fn(() => new Subject<never>()),
+      },
     };
+  },
+
+  /** The options the orders stream was created with. */
+  lastOptions(spies: Spies): OrdersOptions {
+    const options = spies.liveResourceFactoryServiceMock.create.mock.lastCall;
+
+    if (!options) {
+      throw new Error('The orders stream was not created');
+    }
+
+    return options[0];
   },
 
   createRequest(): CreateOrderDomainModel {

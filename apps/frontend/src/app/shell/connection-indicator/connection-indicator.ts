@@ -1,7 +1,7 @@
 import { computed, Component, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
-import { SseConnectionStatusService } from '@restaurant/frontend/core/realtime';
+import { SseStatusService } from '@restaurant/frontend/domain/sse';
 
 import { STATUS_VIEW } from './connection-indicator.constants';
 
@@ -16,7 +16,7 @@ import { STATUS_VIEW } from './connection-indicator.constants';
   },
 })
 export class ConnectionIndicator {
-  readonly #connectionStatus = inject(SseConnectionStatusService);
+  readonly #connectionStatus = inject(SseStatusService);
 
   protected readonly view = computed(
     () => STATUS_VIEW[this.#connectionStatus.status()],

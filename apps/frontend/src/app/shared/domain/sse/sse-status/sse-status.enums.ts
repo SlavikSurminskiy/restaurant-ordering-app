@@ -1,4 +1,4 @@
-import { SseStreamStatus } from '../sse.models';
+import { SseStreamStatus } from '@restaurant/frontend/data-access/sse';
 
 export const SseConnectionStatus = {
   ...SseStreamStatus,

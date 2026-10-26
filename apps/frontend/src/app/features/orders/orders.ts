@@ -46,10 +46,6 @@ export class Orders {
 
   protected readonly updatingIds = signal<ReadonlySet<string>>(new Set());
 
-  constructor() {
-    this.store.keepOrdersUpToDate();
-  }
-
   protected advance(
     order: OrderDomainModel,
     status: OrderStatusDomainModel,
