@@ -1,0 +1,23 @@
+:host {
+  display: block;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.orders__title {
+  font: var(--mat-sys-headline-small);
+}
+
+.orders__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.orders__message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--mat-sys-on-surface-variant);
+}

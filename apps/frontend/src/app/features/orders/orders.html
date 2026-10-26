@@ -1,0 +1,33 @@
+<h1 class="orders__title">
+  {{ authStore.isAdmin() ? 'All orders' : 'Your orders' }}
+</h1>
+
+@switch (store.status()) {
+  @case (LoadStatus.Error) {
+    <div class="orders__message" role="alert">
+      <p>{{ store.error() }}</p>
+      <p>We'll keep trying to load the orders automatically.</p>
+    </div>
+  }
+  @case (LoadStatus.Loaded) {
+    <section class="orders__list" aria-label="Orders">
+      @for (card of cards(); track card.order.id) {
+        <app-order-card
+          [card]="card"
+          [canManage]="authStore.isAdmin()"
+          [isUpdating]="updatingIds().has(card.order.id)"
+          (advance)="advance(card.order, $event)"
+          (cancelOrder)="cancel(card.order)"
+        />
+      } @empty {
+        <div class="orders__message">
+          <p>No orders yet.</p>
+          <a matButton="filled" routerLink="/menu">Browse the menu</a>
+        </div>
+      }
+    </section>
+  }
+  @default {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading the orders" />
+  }
+}

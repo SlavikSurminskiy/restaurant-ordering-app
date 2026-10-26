@@ -96,7 +96,7 @@ describe(Cart.name, () => {
       );
     });
 
-    it('should empty the cart and go to the menu after the order', async () => {
+    it('should empty the cart and go to the orders after the order', async () => {
       const user = Arrange.setupUser();
       const spies = Arrange.createSpies();
       const { renderResult, navigateByUrlSpy } = await Arrange.setup(spies);
@@ -109,7 +109,7 @@ describe(Cart.name, () => {
         'Close',
         { duration: 5000 },
       );
-      expect(navigateByUrlSpy).toHaveBeenCalledWith('/menu');
+      expect(navigateByUrlSpy).toHaveBeenCalledWith('/orders');
     });
 
     it('should show a spinner and block checkout while ordering', async () => {

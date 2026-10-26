@@ -4,3 +4,7 @@ export * from './sse-connection-status/sse-connection-status.service';
 export * from './sse-connection-status/sse-connection-status.enums';
 export * from './utils/backoff-delay';
 export * from './utils/retry-with-backoff';
+export * from './snapshot-sync/snapshot-sync.service';
+export * from './snapshot-sync/snapshot-sync.models';
+export * from './snapshot-sync/snapshot-sync.enums';
+export * from './snapshot-sync/snapshot-sync.constants';

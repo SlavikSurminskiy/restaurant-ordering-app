@@ -3,4 +3,5 @@ export type {
   OrderConflict,
   CreateOrderRequest,
   OrderConflictResponse,
+  UpdateOrderStatusRequest,
 } from '@restaurant/shared-api-types';

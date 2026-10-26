@@ -12,9 +12,10 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap } from 'rxjs';
 
 import { errorMessage } from '@restaurant/frontend/core/http';
+import { SnapshotSyncUpdateKind } from '@restaurant/frontend/core/realtime';
 
 import { categoryConfig, dishConfig } from './menu-store.constants';
-import { LoadStatus, MenuUpdateKind } from './menu-store.enums';
+import { LoadStatus } from './menu-store.enums';
 import { MenuState, MenuUpdate } from './menu-store.models';
 import { MenuStoreService } from './menu-store.service';
 
@@ -39,15 +40,15 @@ export const MenuStore = signalStore(
   withMethods((store) => ({
     _applyUpdate(update: MenuUpdate): void {
       switch (update.kind) {
-        case MenuUpdateKind.Snapshot:
+        case SnapshotSyncUpdateKind.Snapshot:
           patchState(
             store,
-            setAllEntities(update.menu.categories, categoryConfig),
-            setAllEntities(update.menu.dishes, dishConfig),
+            setAllEntities(update.snapshot.categories, categoryConfig),
+            setAllEntities(update.snapshot.dishes, dishConfig),
             { status: LoadStatus.Loaded, error: null },
           );
           break;
-        case MenuUpdateKind.SnapshotFailed:
+        case SnapshotSyncUpdateKind.SnapshotFailed:
           // A shown menu stays on screen while the reload is retried.
           if (store.status() !== LoadStatus.Loaded) {
             patchState(store, {
@@ -56,7 +57,7 @@ export const MenuStore = signalStore(
             });
           }
           break;
-        case MenuUpdateKind.Event:
+        case SnapshotSyncUpdateKind.Event:
           patchState(store, store._menuStoreService.eventUpdater(update.event));
           break;
       }

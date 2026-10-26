@@ -14,6 +14,3 @@ export const dishConfig = entityConfig({
 });
 
 export const MENU_EVENT_TYPES: readonly string[] = Object.values(MenuEventType);
-
-/** Load the menu without live updates if the event stream hasn't opened by then. */
-export const SNAPSHOT_FALLBACK_DELAY_MS = 5000;

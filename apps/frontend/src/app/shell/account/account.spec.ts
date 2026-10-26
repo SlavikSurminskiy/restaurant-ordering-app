@@ -34,6 +34,15 @@ describe(Account.name, () => {
       expect(renderResult.getByText('Admin')).toBeTruthy();
     });
 
+    it('should link a signed-in user to the orders', async () => {
+      const spies = Arrange.createSpies(Arrange.createUser(UserRole.Customer));
+      const { renderResult } = await Arrange.setup(spies);
+
+      expect(
+        renderResult.getByRole('link', { name: 'Orders' }).getAttribute('href'),
+      ).toBe('/orders');
+    });
+
     it('should link an admin to the menu setup', async () => {
       const spies = Arrange.createSpies(Arrange.createUser());
       const { renderResult } = await Arrange.setup(spies);

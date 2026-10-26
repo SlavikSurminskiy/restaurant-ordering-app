@@ -1,6 +1,5 @@
-import { HttpStatusCode } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { defer, of, Subject, throwError } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import type { Mock, Mocked } from 'vitest';
 
 import {
@@ -15,112 +14,34 @@ import {
   MenuDomainModel,
   MenuDomainService,
 } from '@restaurant/frontend/domain/menu';
-import { ApiError } from '@restaurant/frontend/core/http';
 import {
   SseService,
-  BACKOFF_BASE_DELAY_MS,
+  SnapshotSyncUpdateKind,
 } from '@restaurant/frontend/core/realtime';
 
-import { SNAPSHOT_FALLBACK_DELAY_MS } from './menu-store.constants';
-import { MenuUpdateKind } from './menu-store.enums';
 import { MenuEntitiesState, MenuUpdate } from './menu-store.models';
 import { MenuStoreService } from './menu-store.service';
 
 describe(MenuStoreService.name, () => {
   describe('menuUpdates', () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('should load the snapshot only when the event stream opens', () => {
+    it('should load the menu when the event stream opens', () => {
       const spies = Arrange.createSpies();
       const service = Arrange.setup(spies);
       const received: MenuUpdate[] = [];
       service.menuUpdates().subscribe((update) => received.push(update));
-      expect(spies.menuDomainServiceMock.getMenu).not.toHaveBeenCalled();
 
       spies.sseServiceMock.opened$.next();
 
       expect(received).toEqual([
-        { kind: MenuUpdateKind.Snapshot, menu: Arrange.createMenu() },
+        {
+          kind: SnapshotSyncUpdateKind.Snapshot,
+          snapshot: Arrange.createMenu(),
+        },
       ]);
     });
 
-    it('should load a fresh snapshot on every reconnect', () => {
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      service.menuUpdates().subscribe();
-
-      spies.sseServiceMock.opened$.next();
-      spies.sseServiceMock.opened$.next();
-
-      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
-    });
-
-    it('should load a fresh snapshot on request', () => {
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      service.menuUpdates().subscribe();
-      spies.sseServiceMock.opened$.next();
-
-      service.reload();
-
-      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
-    });
-
-    it('should load the snapshot anyway when the stream does not open in time', () => {
-      vi.useFakeTimers();
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      service.menuUpdates().subscribe();
-
-      vi.advanceTimersByTime(SNAPSHOT_FALLBACK_DELAY_MS - 1);
-      expect(spies.menuDomainServiceMock.getMenu).not.toHaveBeenCalled();
-
-      vi.advanceTimersByTime(1);
-      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledOnce();
-
-      spies.sseServiceMock.opened$.next();
-      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
-    });
-
-    it('should not fall back once the stream has opened', () => {
-      vi.useFakeTimers();
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      service.menuUpdates().subscribe();
-
-      spies.sseServiceMock.opened$.next();
-      vi.advanceTimersByTime(SNAPSHOT_FALLBACK_DELAY_MS);
-
-      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledOnce();
-    });
-
-    it('should emit the snapshot, then events from the load, then live ones', () => {
-      const duringLoad = Arrange.createDishDeleted('d-greek');
-      const live = Arrange.createDishDeleted('d-borscht');
-      const spies = Arrange.createSpies();
-      const snapshot = new Subject<MenuDomainModel>();
-      spies.menuDomainServiceMock.getMenu.mockReturnValue(snapshot);
-      const service = Arrange.setup(spies);
-      const received: MenuUpdate[] = [];
-      service.menuUpdates().subscribe((update) => received.push(update));
-      spies.sseServiceMock.opened$.next();
-
-      spies.sseServiceMock.events$.next(duringLoad);
-      expect(received).toEqual([]);
-
-      snapshot.next(Arrange.createMenu());
-      spies.sseServiceMock.events$.next(live);
-
-      expect(received).toEqual([
-        { kind: MenuUpdateKind.Snapshot, menu: Arrange.createMenu() },
-        { kind: MenuUpdateKind.Event, event: duringLoad },
-        { kind: MenuUpdateKind.Event, event: live },
-      ]);
-    });
-
-    it('should ignore order events', () => {
+    it('should pass on menu events and ignore order events', () => {
+      const menuEvent = Arrange.createDishDeleted('d-greek');
       const spies = Arrange.createSpies();
       const service = Arrange.setup(spies);
       const received: MenuUpdate[] = [];
@@ -131,60 +52,26 @@ describe(MenuStoreService.name, () => {
         type: OrderEventType.Updated,
         order: {} as Order,
       });
+      spies.sseServiceMock.events$.next(menuEvent);
 
       expect(received).toEqual([
-        { kind: MenuUpdateKind.Snapshot, menu: Arrange.createMenu() },
+        {
+          kind: SnapshotSyncUpdateKind.Snapshot,
+          snapshot: Arrange.createMenu(),
+        },
+        { kind: SnapshotSyncUpdateKind.Event, event: menuEvent },
       ]);
     });
 
-    it('should report a failed load, keep buffering and retry with backoff', () => {
-      vi.useFakeTimers();
-      const error = Arrange.createNotFoundError();
-      const duringLoad = Arrange.createDishDeleted('d-greek');
+    it('should load a fresh menu on request', () => {
       const spies = Arrange.createSpies();
-      spies.menuDomainServiceMock.getMenu.mockReturnValue(
-        Arrange.createFailingOnce(Arrange.createMenu(), error),
-      );
       const service = Arrange.setup(spies);
-      const received: MenuUpdate[] = [];
-      service.menuUpdates().subscribe((update) => received.push(update));
+      service.menuUpdates().subscribe();
       spies.sseServiceMock.opened$.next();
 
-      spies.sseServiceMock.events$.next(duringLoad);
-      expect(received).toEqual([
-        { kind: MenuUpdateKind.SnapshotFailed, error },
-      ]);
+      service.reload();
 
-      vi.advanceTimersByTime(BACKOFF_BASE_DELAY_MS);
-      expect(received).toEqual([
-        { kind: MenuUpdateKind.SnapshotFailed, error },
-        { kind: MenuUpdateKind.Snapshot, menu: Arrange.createMenu() },
-        { kind: MenuUpdateKind.Event, event: duringLoad },
-      ]);
-    });
-
-    it('should drop a load replaced by a reconnect and emit only the newer snapshot', () => {
-      const duringLoad = Arrange.createDishDeleted('d-greek');
-      const spies = Arrange.createSpies();
-      const first = new Subject<MenuDomainModel>();
-      const second = new Subject<MenuDomainModel>();
-      spies.menuDomainServiceMock.getMenu
-        .mockReturnValueOnce(first)
-        .mockReturnValueOnce(second);
-      const service = Arrange.setup(spies);
-      const received: MenuUpdate[] = [];
-      service.menuUpdates().subscribe((update) => received.push(update));
-
-      spies.sseServiceMock.opened$.next();
-      spies.sseServiceMock.opened$.next();
-      spies.sseServiceMock.events$.next(duringLoad);
-      first.next({ categories: [], dishes: [] });
-      second.next(Arrange.createMenu());
-
-      expect(received).toEqual([
-        { kind: MenuUpdateKind.Snapshot, menu: Arrange.createMenu() },
-        { kind: MenuUpdateKind.Event, event: duringLoad },
-      ]);
+      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -334,22 +221,6 @@ const Arrange = {
 
   createDishDeleted(dishId: string): ServerEvent {
     return { type: MenuEventType.DishDeleted, dishId };
-  },
-
-  /** Fails on the first subscription and succeeds on the next, like a retried request. */
-  createFailingOnce(menu: MenuDomainModel, error: ApiError) {
-    let subscriptions = 0;
-
-    return defer(() =>
-      ++subscriptions === 1 ? throwError(() => error) : of(menu),
-    );
-  },
-
-  createNotFoundError(): ApiError {
-    return new ApiError(
-      HttpStatusCode.NotFound,
-      'The requested data was not found.',
-    );
   },
 
   apply(

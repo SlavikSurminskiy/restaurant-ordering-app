@@ -14,6 +14,35 @@ import { CreateOrderRequest, Order } from './orders-data-access.models';
 import { OrdersDataAccessService } from './orders-data-access.service';
 
 describe(OrdersDataAccessService.name, () => {
+  it('getOrders should get the orders', () => {
+    const { service, httpMock } = Arrange.setup();
+    const next = vi.fn();
+
+    service.getOrders().subscribe(next);
+
+    const req = httpMock.expectOne('/api/orders');
+    req.flush([Arrange.createOrder()]);
+
+    expect(req.request.method).toBe('GET');
+    expect(next).toHaveBeenCalledWith([Arrange.createOrder()]);
+  });
+
+  it('updateOrderStatus should patch the status of the order', () => {
+    const { service, httpMock } = Arrange.setup();
+    const next = vi.fn();
+
+    service
+      .updateOrderStatus('o-1', { status: OrderStatus.Ready })
+      .subscribe(next);
+
+    const req = httpMock.expectOne('/api/orders/o-1/status');
+    req.flush(Arrange.createOrder());
+
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ status: OrderStatus.Ready });
+    expect(next).toHaveBeenCalledWith(Arrange.createOrder());
+  });
+
   it('createOrder should post the order with the idempotency key', () => {
     const { service, httpMock } = Arrange.setup();
     const next = vi.fn();
