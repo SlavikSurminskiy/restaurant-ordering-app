@@ -95,15 +95,18 @@ export class Menu {
     this.#scrollToCategory(value);
   }
 
-  protected addToCart({ id, name, price, isOpenPrice }: Dish): void {
+  protected addToCart(
+    { id, name, price, isOpenPrice }: Dish,
+    quantity: number,
+  ): void {
     if (!isOpenPrice && price !== null) {
-      this.#cartStore.add({ dishId: id, name, unitPrice: price });
+      this.#cartStore.add({ dishId: id, name, unitPrice: price }, quantity);
     } else {
       this.#openPriceDialogOpener
         .openDialog({ dishName: name, unitPrice: null })
         .pipe(filter((unitPrice) => unitPrice !== undefined))
         .subscribe((unitPrice) =>
-          this.#cartStore.add({ dishId: id, name, unitPrice }),
+          this.#cartStore.add({ dishId: id, name, unitPrice }, quantity),
         );
     }
   }

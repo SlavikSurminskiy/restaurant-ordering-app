@@ -45,13 +45,13 @@ export const CartStore = signalStore(
     ),
   })),
   withMethods((store) => ({
-    add(item: NewCartItem): void {
+    add(item: NewCartItem, quantity: number): void {
       const existing = store.itemEntityMap()[item.dishId];
 
       patchState(
         store,
         setEntity(
-          store._cartStoreService.added(existing, item),
+          store._cartStoreService.added(existing, item, quantity),
           cartItemConfig,
         ),
         NEW_ATTEMPT,

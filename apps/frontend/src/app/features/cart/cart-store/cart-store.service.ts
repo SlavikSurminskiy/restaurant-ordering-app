@@ -8,8 +8,12 @@ import { CartItem, NewCartItem } from './cart-store.models';
 
 @Service()
 export class CartStoreService {
-  added(existing: CartItem | undefined, item: NewCartItem): CartItem {
-    return { ...item, quantity: (existing?.quantity ?? 0) + 1 };
+  added(
+    existing: CartItem | undefined,
+    item: NewCartItem,
+    quantity: number,
+  ): CartItem {
+    return { ...item, quantity: (existing?.quantity ?? 0) + quantity };
   }
 
   resolved(conflicts: readonly OrderConflictDomainModel[]): {
