@@ -50,7 +50,12 @@
           @if (row.kind === MenuRowKind.Category) {
             <h2 class="category">{{ row.category.name }}</h2>
           } @else {
-            <app-dish-card [dish]="row.dish" (add)="addToCart(row.dish)" />
+            <app-dish-card
+              [dish]="row.dish"
+              [quantity]="chosenQuantities()[row.dish.id] ?? 1"
+              (quantityChange)="chooseQuantity(row.dish.id, $event)"
+              (add)="addToCart(row.dish)"
+            />
           }
         </div>
       </cdk-virtual-scroll-viewport>

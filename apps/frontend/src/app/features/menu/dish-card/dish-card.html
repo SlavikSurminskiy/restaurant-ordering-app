@@ -26,14 +26,41 @@
   <span class="dish-card__price">{{ priceLabel() }}</span>
 
   @if (dish().available) {
-    <button
-      matButton="tonal"
-      type="button"
-      [attr.aria-label]="'Add ' + dish().name + ' to cart'"
-      (click)="add.emit()"
-    >
-      Add
-    </button>
+    <div class="dish-card__actions">
+      <div class="dish-card__quantity">
+        <button
+          matIconButton
+          type="button"
+          [disabled]="quantity() <= 1"
+          [attr.aria-label]="'One less ' + dish().name"
+          (click)="changeQuantity(-1)"
+        >
+          <mat-icon>remove</mat-icon>
+        </button>
+        <span
+          class="dish-card__quantity-value"
+          [attr.aria-label]="'Quantity of ' + dish().name"
+          >{{ quantity() }}</span
+        >
+        <button
+          matIconButton
+          type="button"
+          [disabled]="quantity() >= MAX_ADD_QUANTITY"
+          [attr.aria-label]="'One more ' + dish().name"
+          (click)="changeQuantity(1)"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+      <button
+        matButton="tonal"
+        type="button"
+        [attr.aria-label]="'Add ' + dish().name + ' to cart'"
+        (click)="add.emit()"
+      >
+        Add
+      </button>
+    </div>
   } @else {
     <span class="dish-card__badge">Unavailable</span>
   }

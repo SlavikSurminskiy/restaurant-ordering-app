@@ -58,6 +58,31 @@
   font: var(--mat-sys-title-medium);
 }
 
+.dish-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dish-card__quantity {
+  // Compact buttons, so the stepper fits the fixed-height menu row.
+  --mat-icon-button-state-layer-size: 32px;
+  --mat-icon-button-icon-size: 20px;
+
+  display: flex;
+  align-items: center;
+
+  button {
+    padding: 6px;
+  }
+}
+
+.dish-card__quantity-value {
+  min-width: 24px;
+  text-align: center;
+  font: var(--mat-sys-label-large);
+}
+
 .dish-card__badge {
   color: var(--mat-sys-error);
 }
