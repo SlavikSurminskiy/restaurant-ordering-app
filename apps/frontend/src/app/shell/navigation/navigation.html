@@ -1,0 +1,40 @@
+<nav class="navigation" aria-label="Main">
+  <a
+    matButton
+    routerLink="/menu"
+    routerLinkActive="navigation__link--active"
+    ariaCurrentWhenActive="page"
+  >
+    Menu
+  </a>
+  @if (store.isAdmin()) {
+    <a
+      matButton
+      routerLink="/setup-menu"
+      routerLinkActive="navigation__link--active"
+      ariaCurrentWhenActive="page"
+    >
+      Setup menu
+    </a>
+  }
+  @if (store.isSignedIn()) {
+    <a
+      matButton
+      routerLink="/orders"
+      routerLinkActive="navigation__link--active"
+      ariaCurrentWhenActive="page"
+    >
+      Orders
+    </a>
+    <button matButton type="button" (click)="signOut()">Sign out</button>
+  } @else {
+    <a
+      matButton
+      routerLink="/login"
+      routerLinkActive="navigation__link--active"
+      ariaCurrentWhenActive="page"
+    >
+      Sign in
+    </a>
+  }
+</nav>
