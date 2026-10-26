@@ -7,6 +7,7 @@ import {
 } from '@restaurant/frontend/domain/sse';
 
 import { ConnectionIndicator } from './connection-indicator';
+import { ConnectionTone } from './connection-indicator.enums';
 
 describe(ConnectionIndicator.name, () => {
   it.each([
@@ -38,24 +39,64 @@ describe(ConnectionIndicator.name, () => {
     },
   );
 
-  it('should mark the indicator as degraded only while reconnecting or offline', async () => {
+  it.each([
+    [SseConnectionStatus.Online, ConnectionTone.Ok],
+    [SseConnectionStatus.Connecting, ConnectionTone.Warning],
+    [SseConnectionStatus.Reconnecting, ConnectionTone.Warning],
+    [SseConnectionStatus.Disconnected, ConnectionTone.Error],
+    [SseConnectionStatus.Offline, ConnectionTone.Error],
+  ])('should colour the %s status as %s', async (status, tone) => {
+    const { renderResult } = await Arrange.setup(Arrange.createSpies(status));
+
+    expect(Array.from(renderResult.container.classList)).toEqual([
+      `connection-indicator--${tone}`,
+    ]);
+  });
+
+  it('should switch the colour when the status changes', async () => {
     const spies = Arrange.createSpies(SseConnectionStatus.Online);
     const { renderResult } = await Arrange.setup(spies);
-    const indicator = renderResult.container;
-
-    expect(indicator.classList).not.toContain('connection-indicator--degraded');
-
-    spies.sseConnectionStatusServiceMock.status.set(
-      SseConnectionStatus.Reconnecting,
-    );
-    await renderResult.fixture.whenStable();
-    expect(indicator.classList).toContain('connection-indicator--degraded');
 
     spies.sseConnectionStatusServiceMock.status.set(
       SseConnectionStatus.Offline,
     );
     await renderResult.fixture.whenStable();
-    expect(indicator.classList).toContain('connection-indicator--degraded');
+
+    expect(renderResult.container.classList).toContain(
+      'connection-indicator--error',
+    );
+    expect(renderResult.container.classList).not.toContain(
+      'connection-indicator--ok',
+    );
+  });
+
+  it.each([
+    [SseConnectionStatus.Online, true],
+    [SseConnectionStatus.Connecting, false],
+    [SseConnectionStatus.Offline, false],
+  ])('should pulse the icon of the %s status: %s', async (status, pulsing) => {
+    const { renderResult } = await Arrange.setup(Arrange.createSpies(status));
+
+    expect(
+      renderResult.container
+        .querySelector('.connection-indicator__icon')
+        ?.classList.contains('connection-indicator__icon--pulsing'),
+    ).toBe(pulsing);
+  });
+
+  it.each([
+    [SseConnectionStatus.Connecting, true],
+    [SseConnectionStatus.Reconnecting, true],
+    [SseConnectionStatus.Online, false],
+    [SseConnectionStatus.Offline, false],
+  ])('should spin the icon of the %s status: %s', async (status, spinning) => {
+    const { renderResult } = await Arrange.setup(Arrange.createSpies(status));
+
+    expect(
+      renderResult.container
+        .querySelector('.connection-indicator__icon')
+        ?.classList.contains('connection-indicator__icon--spinning'),
+    ).toBe(spinning);
   });
 });
 

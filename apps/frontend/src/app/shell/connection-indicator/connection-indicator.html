@@ -1,10 +1,22 @@
-<mat-icon class="connection-indicator__icon" aria-hidden="true">
-  {{ view().icon }}
-</mat-icon>
+<!-- Tracked by status, so the content is created anew and fades in on every change. -->
+@for (current of [view()]; track current.label) {
+  <mat-icon
+    class="connection-indicator__icon"
+    [class.connection-indicator__icon--spinning]="
+      current.tone === ConnectionTone.Warning
+    "
+    [class.connection-indicator__icon--pulsing]="
+      current.tone === ConnectionTone.Ok
+    "
+    aria-hidden="true"
+  >
+    {{ current.icon }}
+  </mat-icon>
 
-<span class="connection-indicator__text">
-  <span class="connection-indicator__label">{{ view().label }}</span>
-  <span class="connection-indicator__description">
-    {{ view().description }}
+  <span class="connection-indicator__text">
+    <span class="connection-indicator__label">{{ current.label }}</span>
+    <span class="connection-indicator__description">
+      {{ current.description }}
+    </span>
   </span>
-</span>
+}

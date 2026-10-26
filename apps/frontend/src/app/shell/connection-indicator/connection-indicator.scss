@@ -1,15 +1,43 @@
 :host {
+  // Dark amber and green in the light theme, so the text stays readable.
+  --connection-indicator-ok: light-dark(#1b7f3b, #7bd88f);
+  --connection-indicator-warning: light-dark(#8a5a00, #f2c14e);
+  --connection-indicator-error: var(--mat-sys-error);
+
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: var(--connection-indicator-color);
+  transition: color 300ms ease;
 }
 
-:host(.connection-indicator--degraded) {
-  color: var(--mat-sys-error);
+:host(.connection-indicator--ok) {
+  --connection-indicator-color: var(--connection-indicator-ok);
+}
 
-  .connection-indicator__description {
-    color: inherit;
-  }
+:host(.connection-indicator--warning) {
+  --connection-indicator-color: var(--connection-indicator-warning);
+}
+
+:host(.connection-indicator--error) {
+  --connection-indicator-color: var(--connection-indicator-error);
+}
+
+.connection-indicator__icon,
+.connection-indicator__text {
+  animation: connection-indicator-enter 250ms ease-out;
+}
+
+.connection-indicator__icon--spinning {
+  animation:
+    connection-indicator-enter 250ms ease-out,
+    connection-indicator-spin 1.2s linear infinite;
+}
+
+.connection-indicator__icon--pulsing {
+  animation:
+    connection-indicator-enter 250ms ease-out,
+    connection-indicator-pulse 2s ease-in-out 250ms infinite;
 }
 
 .connection-indicator__text {
@@ -24,5 +52,37 @@
 
 .connection-indicator__description {
   font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.85;
+}
+
+@keyframes connection-indicator-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes connection-indicator-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes connection-indicator-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition: none;
+  }
+
+  .connection-indicator__icon,
+  .connection-indicator__icon--spinning,
+  .connection-indicator__icon--pulsing,
+  .connection-indicator__text {
+    animation: none;
+  }
 }

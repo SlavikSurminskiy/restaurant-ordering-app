@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { SseStatusService } from '@restaurant/frontend/domain/sse';
 
 import { STATUS_VIEW } from './connection-indicator.constants';
+import { ConnectionTone } from './connection-indicator.enums';
 
 @Component({
   selector: 'app-connection-indicator',
@@ -12,11 +13,13 @@ import { STATUS_VIEW } from './connection-indicator.constants';
   styleUrl: './connection-indicator.scss',
   host: {
     role: 'status',
-    '[class.connection-indicator--degraded]': 'view().degraded',
+    '[class]': "'connection-indicator--' + view().tone",
   },
 })
 export class ConnectionIndicator {
   readonly #connectionStatus = inject(SseStatusService);
+
+  protected readonly ConnectionTone = ConnectionTone;
 
   protected readonly view = computed(
     () => STATUS_VIEW[this.#connectionStatus.status()],
