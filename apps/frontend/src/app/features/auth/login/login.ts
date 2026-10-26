@@ -12,7 +12,6 @@ import { Router } from '@angular/router';
 
 import { AuthDomainService } from '@restaurant/frontend/domain/auth';
 import { ApiError, errorMessage } from '@restaurant/frontend/core/http';
-import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { AuthStore } from '../auth-store/auth.store';
 
@@ -34,7 +33,6 @@ export class Login {
   readonly #router = inject(Router);
   readonly #store = inject(AuthStore);
   readonly #authDomainService = inject(AuthDomainService);
-  readonly #sseService = inject(SseService);
 
   protected readonly DEMO_ACCOUNTS = DEMO_ACCOUNTS;
 
@@ -62,7 +60,6 @@ export class Login {
     this.#authDomainService.login(this.form.getRawValue()).subscribe({
       next: (user) => {
         this.#store.setUser(user);
-        this.#sseService.reconnect();
         void this.#router.navigateByUrl('/menu');
       },
       error: (error) => {

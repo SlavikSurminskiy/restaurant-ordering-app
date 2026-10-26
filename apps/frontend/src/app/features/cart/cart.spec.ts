@@ -21,8 +21,8 @@ import {
 import { ApiError } from '@restaurant/frontend/core/http';
 import {
   SseConnectionStatus,
-  SseConnectionStatusService,
-} from '@restaurant/frontend/core/realtime';
+  SseStatusService,
+} from '@restaurant/frontend/domain/sse';
 
 import { AuthStore } from '../auth/auth-store/auth.store';
 import { LoadStatus } from '../menu/menu-store/menu-store.enums';
@@ -379,7 +379,7 @@ const Arrange = {
         { provide: CartStore, useValue: cartStoreMock },
         { provide: MenuStore, useValue: menuStoreMock },
         { provide: AuthStore, useValue: authStoreMock },
-        { provide: SseConnectionStatusService, useValue: connectionStatusMock },
+        { provide: SseStatusService, useValue: connectionStatusMock },
         { provide: OrdersDomainService, useValue: ordersDomainServiceMock },
         {
           provide: OpenPriceDialogOpenerService,

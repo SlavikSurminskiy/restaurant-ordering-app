@@ -1,31 +1,44 @@
 import { HttpStatusCode } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
 import { OrderEventType, OrderStatus } from '@restaurant/shared-api-types';
 import {
   OrderDomainModel,
+  OrderStreamUpdate,
   OrdersDomainService,
 } from '@restaurant/frontend/domain/orders';
 import { ApiError } from '@restaurant/frontend/core/http';
-import {
-  SseService,
-  SnapshotSyncUpdateKind,
-} from '@restaurant/frontend/core/realtime';
+import { LiveResourceUpdateKind } from '@restaurant/frontend/domain/sse';
 
 import { LoadStatus } from '../../menu/menu-store/menu-store.enums';
 
-import { OrderUpdate } from './orders-store.models';
 import { OrdersStoreService } from './orders-store.service';
 import { OrdersStore } from './orders.store';
 
 describe('OrdersStore', () => {
-  it('should be loading until the first snapshot', () => {
+  it('should start streaming the orders once it is created', () => {
+    const spies = Arrange.createSpies();
+
+    Arrange.setup(spies);
+
+    expect(spies.ordersDomainServiceMock.streamOrders).toHaveBeenCalledOnce();
+  });
+
+  it('should ask the domain for a fresh snapshot', () => {
     const spies = Arrange.createSpies();
     const store = Arrange.setup(spies);
 
-    store.keepOrdersUpToDate();
+    store.reloadOrders();
+
+    expect(spies.ordersDomainServiceMock.reloadOrders).toHaveBeenCalledOnce();
+  });
+
+  it('should be loading until the first snapshot', () => {
+    const spies = Arrange.createSpies();
+    const store = Arrange.setup(spies);
 
     expect(store.status()).toBe(LoadStatus.Loading);
     expect(store.orders()).toEqual([]);
@@ -40,9 +53,8 @@ describe('OrdersStore', () => {
     const spies = Arrange.createSpies();
     const store = Arrange.setup(spies);
 
-    store.keepOrdersUpToDate();
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.Snapshot,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.Snapshot,
       snapshot: [older, newer],
     });
 
@@ -54,9 +66,8 @@ describe('OrdersStore', () => {
     const spies = Arrange.createSpies();
     const store = Arrange.setup(spies);
 
-    store.keepOrdersUpToDate();
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.SnapshotFailed,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.SnapshotFailed,
       error: new ApiError(
         HttpStatusCode.ServiceUnavailable,
         'The server is having trouble.',
@@ -70,14 +81,13 @@ describe('OrdersStore', () => {
   it('should keep shown orders when a reload fails', () => {
     const spies = Arrange.createSpies();
     const store = Arrange.setup(spies);
-    store.keepOrdersUpToDate();
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.Snapshot,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.Snapshot,
       snapshot: [Arrange.createOrder()],
     });
 
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.SnapshotFailed,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.SnapshotFailed,
       error: new Error('Failed'),
     });
 
@@ -89,14 +99,13 @@ describe('OrdersStore', () => {
     const order = Arrange.createOrder();
     const spies = Arrange.createSpies();
     const store = Arrange.setup(spies);
-    store.keepOrdersUpToDate();
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.Snapshot,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.Snapshot,
       snapshot: [],
     });
 
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.Event,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.Event,
       event: { type: OrderEventType.Created, order },
     });
 
@@ -110,14 +119,13 @@ describe('OrdersStore', () => {
     });
     const spies = Arrange.createSpies();
     const store = Arrange.setup(spies);
-    store.keepOrdersUpToDate();
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.Snapshot,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.Snapshot,
       snapshot: [Arrange.createOrder()],
     });
 
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.Event,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.Event,
       event: { type: OrderEventType.Updated, order: ready },
     });
 
@@ -131,9 +139,8 @@ describe('OrdersStore', () => {
     });
     const spies = Arrange.createSpies();
     const store = Arrange.setup(spies);
-    store.keepOrdersUpToDate();
-    spies.orderUpdates$.next({
-      kind: SnapshotSyncUpdateKind.Snapshot,
+    spies.ordersStream$.next({
+      kind: LiveResourceUpdateKind.Snapshot,
       snapshot: [ready],
     });
 
@@ -144,7 +151,8 @@ describe('OrdersStore', () => {
 });
 
 interface Spies {
-  orderUpdates$: Subject<OrderUpdate>;
+  ordersStream$: Subject<OrderStreamUpdate>;
+  ordersDomainServiceMock: { streamOrders: Mock; reloadOrders: Mock };
 }
 
 const Arrange = {
@@ -153,21 +161,26 @@ const Arrange = {
       providers: [
         OrdersStore,
         OrdersStoreService,
-        { provide: OrdersDomainService, useValue: {} },
-        { provide: SseService, useValue: {} },
+        {
+          provide: OrdersDomainService,
+          useValue: spies.ordersDomainServiceMock,
+        },
       ],
     });
-
-    vi.spyOn(
-      TestBed.inject(OrdersStoreService),
-      'orderUpdates',
-    ).mockReturnValue(spies.orderUpdates$);
 
     return TestBed.inject(OrdersStore);
   },
 
   createSpies(): Spies {
-    return { orderUpdates$: new Subject<OrderUpdate>() };
+    const ordersStream$ = new Subject<OrderStreamUpdate>();
+
+    return {
+      ordersStream$,
+      ordersDomainServiceMock: {
+        streamOrders: vi.fn(() => ordersStream$.asObservable()),
+        reloadOrders: vi.fn(),
+      },
+    };
   },
 
   createOrder(order: Partial<OrderDomainModel> = {}): OrderDomainModel {

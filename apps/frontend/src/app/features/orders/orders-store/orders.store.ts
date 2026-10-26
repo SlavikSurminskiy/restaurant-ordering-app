@@ -1,5 +1,6 @@
 import { computed, inject } from '@angular/core';
 import {
+  withHooks,
   withState,
   withProps,
   patchState,
@@ -7,22 +8,20 @@ import {
   withMethods,
   withComputed,
 } from '@ngrx/signals';
-import {
-  setEntity,
-  withEntities,
-  setAllEntities,
-} from '@ngrx/signals/entities';
+import { withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap } from 'rxjs';
+import { tap } from 'rxjs';
 
-import { OrderDomainModel } from '@restaurant/frontend/domain/orders';
-import { errorMessage } from '@restaurant/frontend/core/http';
-import { SnapshotSyncUpdateKind } from '@restaurant/frontend/core/realtime';
+import {
+  OrderDomainModel,
+  OrderStreamUpdate,
+  OrdersDomainService,
+} from '@restaurant/frontend/domain/orders';
 
 import { LoadStatus } from '../../menu/menu-store/menu-store.enums';
 
 import { orderConfig } from './orders-store.constants';
-import { OrdersState, OrderUpdate } from './orders-store.models';
+import { OrdersState } from './orders-store.models';
 import { OrdersStoreService } from './orders-store.service';
 
 const initialState: OrdersState = {
@@ -35,6 +34,7 @@ export const OrdersStore = signalStore(
   withEntities(orderConfig),
   withProps(() => ({
     _ordersStoreService: inject(OrdersStoreService),
+    _ordersDomainService: inject(OrdersDomainService),
   })),
   withComputed(({ orderEntities, _ordersStoreService }) => ({
     orders: computed(() =>
@@ -43,44 +43,23 @@ export const OrdersStore = signalStore(
   })),
   withMethods((store) => ({
     upsertOrder(order: OrderDomainModel): void {
-      const current = store.orderEntityMap()[order.id];
-
-      if (store._ordersStoreService.isNewer(order, current)) {
-        patchState(store, setEntity(order, orderConfig));
-      }
+      patchState(store, store._ordersStoreService.orderUpdater(order));
     },
-  })),
-  withMethods((store) => ({
-    _applyUpdate(update: OrderUpdate): void {
-      switch (update.kind) {
-        case SnapshotSyncUpdateKind.Snapshot:
-          patchState(store, setAllEntities(update.snapshot, orderConfig), {
-            status: LoadStatus.Loaded,
-            error: null,
-          });
-          break;
-        case SnapshotSyncUpdateKind.SnapshotFailed:
-          // Shown orders stay on screen while the reload is retried.
-          if (store.status() !== LoadStatus.Loaded) {
-            patchState(store, {
-              status: LoadStatus.Error,
-              error: errorMessage(update.error),
-            });
-          }
-          break;
-        case SnapshotSyncUpdateKind.Event:
-          // Both events carry the full order.
-          store.upsertOrder(update.event.order);
-          break;
-      }
-    },
-  })),
-  withMethods((store) => ({
-    keepOrdersUpToDate: rxMethod<void>(
-      pipe(
-        switchMap(() => store._ordersStoreService.orderUpdates()),
-        tap((update) => store._applyUpdate(update)),
+    processOrdersStream: rxMethod<OrderStreamUpdate>(
+      tap((update) =>
+        patchState(
+          store,
+          store._ordersStoreService.ordersStreamUpdater(update),
+        ),
       ),
     ),
+    reloadOrders(): void {
+      store._ordersDomainService.reloadOrders();
+    },
   })),
+  withHooks({
+    onInit(store) {
+      store.processOrdersStream(store._ordersDomainService.streamOrders());
+    },
+  }),
 );

@@ -4,7 +4,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthDomainService } from '@restaurant/frontend/domain/auth';
-import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { AuthStore } from '../../features/auth/auth-store/auth.store';
 
@@ -17,7 +16,6 @@ import { AuthStore } from '../../features/auth/auth-store/auth.store';
 export class Account {
   readonly #router = inject(Router);
   readonly #authDomainService = inject(AuthDomainService);
-  readonly #sseService = inject(SseService);
 
   protected readonly store = inject(AuthStore);
 
@@ -25,7 +23,6 @@ export class Account {
     this.#authDomainService.logout().subscribe({
       next: () => {
         this.store.clearUser();
-        this.#sseService.reconnect();
         void this.#router.navigateByUrl('/menu');
       },
     });

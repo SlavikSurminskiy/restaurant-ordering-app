@@ -1,9 +1,11 @@
 import type {
   Dish,
   Category,
-  DiscountResponse,
+  MenuEvent,
   MenuResponse,
+  DiscountResponse,
 } from '@restaurant/shared-api-types';
+import { LiveResourceUpdate } from '@restaurant/frontend/domain/sse';
 
 export type DiscountDomainModel = DiscountResponse;
 
@@ -13,3 +15,5 @@ export interface MenuSectionDomainModel {
   category: Category;
   dishes: Dish[];
 }
+
+export type MenuStreamUpdate = LiveResourceUpdate<MenuDomainModel, MenuEvent>;

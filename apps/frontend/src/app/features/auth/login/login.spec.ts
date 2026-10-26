@@ -12,7 +12,6 @@ import {
   AuthDomainService,
 } from '@restaurant/frontend/domain/auth';
 import { ApiError } from '@restaurant/frontend/core/http';
-import { SseService } from '@restaurant/frontend/core/realtime';
 
 import { AuthStore } from '../auth-store/auth.store';
 
@@ -83,17 +82,6 @@ describe(Login.name, () => {
       expect(spies.authStoreMock.setUser).toHaveBeenCalledWith(
         Arrange.createUser(),
       );
-    });
-
-    it('should reconnect the event stream', async () => {
-      const user = Arrange.setupUser();
-      const spies = Arrange.createSpies();
-      const { renderResult } = await Arrange.setup(spies);
-
-      await user.click(renderResult.getByRole('button', { name: 'Admin' }));
-      await user.click(renderResult.getByRole('button', { name: 'Sign in' }));
-
-      expect(spies.sseServiceMock.reconnect).toHaveBeenCalledOnce();
     });
 
     it('should go to the menu', async () => {
@@ -169,7 +157,6 @@ describe(Login.name, () => {
 
 interface Spies {
   authDomainServiceMock: { login: Mock };
-  sseServiceMock: { reconnect: Mock };
   authStoreMock: { setUser: Mock };
   routerMock: { navigateByUrl: Mock };
 }
@@ -179,7 +166,6 @@ const Arrange = {
     const renderResult = await render(Login, {
       providers: [
         { provide: AuthDomainService, useValue: spies.authDomainServiceMock },
-        { provide: SseService, useValue: spies.sseServiceMock },
         { provide: AuthStore, useValue: spies.authStoreMock },
         { provide: Router, useValue: spies.routerMock },
       ],
@@ -197,9 +183,6 @@ const Arrange = {
       authDomainServiceMock: {
         login: vi.fn().mockReturnValue(of(Arrange.createUser())),
       } satisfies Mocked<Pick<AuthDomainService, 'login'>>,
-      sseServiceMock: {
-        reconnect: vi.fn(),
-      } satisfies Mocked<Pick<SseService, 'reconnect'>>,
       authStoreMock: {
         setUser: vi.fn(),
       },

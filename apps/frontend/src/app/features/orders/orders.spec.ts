@@ -24,13 +24,6 @@ import { OrdersStore } from './orders-store/orders.store';
 import { OrdersStoreService } from './orders-store/orders-store.service';
 
 describe(Orders.name, () => {
-  it('should keep the orders up to date while the page is open', async () => {
-    const spies = Arrange.createSpies();
-    await Arrange.setup(spies);
-
-    expect(spies.ordersStoreMock.keepOrdersUpToDate).toHaveBeenCalledOnce();
-  });
-
   it('should show a loading bar until the orders are loaded', async () => {
     const spies = Arrange.createSpies();
     spies.ordersStoreMock.status.set(LoadStatus.Loading);
@@ -177,7 +170,6 @@ interface Spies {
     status: WritableSignal<LoadStatus>;
     error: WritableSignal<string | null>;
     orders: WritableSignal<OrderDomainModel[]>;
-    keepOrdersUpToDate: Mock;
     upsertOrder: Mock;
   };
   authStoreMock: { isAdmin: WritableSignal<boolean> };
@@ -226,7 +218,6 @@ const Arrange = {
         status: signal<LoadStatus>(LoadStatus.Loaded),
         error: signal<string | null>(null),
         orders: signal([Arrange.createOrder()]),
-        keepOrdersUpToDate: vi.fn(),
         upsertOrder: vi.fn(),
       },
       authStoreMock: { isAdmin: signal(true) },

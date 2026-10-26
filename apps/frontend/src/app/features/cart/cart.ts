@@ -25,8 +25,8 @@ import { formatMoney, MoneyPipe } from '@restaurant/frontend/ui';
 import { errorMessage } from '@restaurant/frontend/core/http';
 import {
   SseConnectionStatus,
-  SseConnectionStatusService,
-} from '@restaurant/frontend/core/realtime';
+  SseStatusService,
+} from '@restaurant/frontend/domain/sse';
 
 import { AppData } from '../../app.resolver';
 import { AuthStore } from '../auth/auth-store/auth.store';
@@ -65,7 +65,7 @@ export class Cart {
   readonly #orderConflictsDialogOpener = inject(
     OrderConflictsDialogOpenerService,
   );
-  readonly #connectionStatus = inject(SseConnectionStatusService);
+  readonly #connectionStatus = inject(SseStatusService);
   readonly #menuStore = inject(MenuStore);
 
   protected readonly store = inject(CartStore);

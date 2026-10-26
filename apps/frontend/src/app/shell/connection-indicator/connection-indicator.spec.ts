@@ -3,8 +3,8 @@ import { render } from '@testing-library/angular';
 
 import {
   SseConnectionStatus,
-  SseConnectionStatusService,
-} from '@restaurant/frontend/core/realtime';
+  SseStatusService,
+} from '@restaurant/frontend/domain/sse';
 
 import { ConnectionIndicator } from './connection-indicator';
 
@@ -70,7 +70,7 @@ const Arrange = {
     const renderResult = await render(ConnectionIndicator, {
       providers: [
         {
-          provide: SseConnectionStatusService,
+          provide: SseStatusService,
           useValue: spies.sseConnectionStatusServiceMock,
         },
       ],
@@ -83,7 +83,7 @@ const Arrange = {
     return {
       sseConnectionStatusServiceMock: {
         status: signal(status),
-      } satisfies Pick<SseConnectionStatusService, 'status'>,
+      } satisfies Pick<SseStatusService, 'status'>,
     };
   },
 };

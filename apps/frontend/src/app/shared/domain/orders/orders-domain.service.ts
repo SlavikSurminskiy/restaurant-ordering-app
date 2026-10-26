@@ -1,15 +1,29 @@
 import { HttpStatusCode } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
-import { catchError, map, Observable, of, throwError } from 'rxjs';
+import {
+  of,
+  map,
+  filter,
+  Subject,
+  throwError,
+  catchError,
+  Observable,
+} from 'rxjs';
 
+import type { OrderEvent, ServerEvent } from '@restaurant/shared-api-types';
 import {
   OrderConflictResponse,
   OrdersDataAccessService,
 } from '@restaurant/frontend/data-access/orders';
 import { ApiError } from '@restaurant/frontend/core/http';
+import { SseDataAccessService } from '@restaurant/frontend/data-access/sse';
+import { LiveResourceFactoryService } from '@restaurant/frontend/domain/sse';
+
+import { ORDER_EVENT_TYPES } from './orders-domain.constants';
 
 import {
   OrderDomainModel,
+  OrderStreamUpdate,
   CreateOrderResult,
   OrderStatusDomainModel,
   CreateOrderResultKind,
@@ -19,9 +33,26 @@ import {
 @Service()
 export class OrdersDomainService {
   #ordersDataAccess = inject(OrdersDataAccessService);
+  #sseDataAccess = inject(SseDataAccessService);
+  #liveResourceFactory = inject(LiveResourceFactoryService);
+  #reloadRequests = new Subject<void>();
 
   getOrders(): Observable<OrderDomainModel[]> {
     return this.#ordersDataAccess.getOrders();
+  }
+
+  streamOrders(): Observable<OrderStreamUpdate> {
+    return this.#liveResourceFactory.create({
+      loadSnapshot: () => this.getOrders(),
+      events$: this.#sseDataAccess
+        .serverEvents()
+        .pipe(filter((event) => this.#isOrderEvent(event))),
+      reload$: this.#reloadRequests,
+    });
+  }
+
+  reloadOrders(): void {
+    this.#reloadRequests.next();
   }
 
   updateOrderStatus(
@@ -59,5 +90,9 @@ export class OrdersDomainService {
       error.status === HttpStatusCode.Conflict &&
       Array.isArray((error.body as Partial<OrderConflictResponse>)?.conflicts)
     );
+  }
+
+  #isOrderEvent(event: ServerEvent): event is OrderEvent {
+    return ORDER_EVENT_TYPES.includes(event.type);
   }
 }

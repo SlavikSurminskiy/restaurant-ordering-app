@@ -1,80 +1,19 @@
 import { TestBed } from '@angular/core/testing';
-import { of, Subject } from 'rxjs';
-import type { Mock, Mocked } from 'vitest';
+import type { PartialStateUpdater } from '@ngrx/signals';
 
 import {
   Dish,
-  Order,
   Category,
-  ServerEvent,
+  MenuEvent,
   MenuEventType,
-  OrderEventType,
 } from '@restaurant/shared-api-types';
-import {
-  MenuDomainModel,
-  MenuDomainService,
-} from '@restaurant/frontend/domain/menu';
-import {
-  SseService,
-  SnapshotSyncUpdateKind,
-} from '@restaurant/frontend/core/realtime';
+import { LiveResourceUpdateKind } from '@restaurant/frontend/domain/sse';
 
-import { MenuEntitiesState, MenuUpdate } from './menu-store.models';
+import { LoadStatus } from './menu-store.enums';
+import { MenuEntitiesState, MenuStoreState } from './menu-store.models';
 import { MenuStoreService } from './menu-store.service';
 
 describe(MenuStoreService.name, () => {
-  describe('menuUpdates', () => {
-    it('should load the menu when the event stream opens', () => {
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      const received: MenuUpdate[] = [];
-      service.menuUpdates().subscribe((update) => received.push(update));
-
-      spies.sseServiceMock.opened$.next();
-
-      expect(received).toEqual([
-        {
-          kind: SnapshotSyncUpdateKind.Snapshot,
-          snapshot: Arrange.createMenu(),
-        },
-      ]);
-    });
-
-    it('should pass on menu events and ignore order events', () => {
-      const menuEvent = Arrange.createDishDeleted('d-greek');
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      const received: MenuUpdate[] = [];
-      service.menuUpdates().subscribe((update) => received.push(update));
-      spies.sseServiceMock.opened$.next();
-
-      spies.sseServiceMock.events$.next({
-        type: OrderEventType.Updated,
-        order: {} as Order,
-      });
-      spies.sseServiceMock.events$.next(menuEvent);
-
-      expect(received).toEqual([
-        {
-          kind: SnapshotSyncUpdateKind.Snapshot,
-          snapshot: Arrange.createMenu(),
-        },
-        { kind: SnapshotSyncUpdateKind.Event, event: menuEvent },
-      ]);
-    });
-
-    it('should load a fresh menu on request', () => {
-      const spies = Arrange.createSpies();
-      const service = Arrange.setup(spies);
-      service.menuUpdates().subscribe();
-      spies.sseServiceMock.opened$.next();
-
-      service.reload();
-
-      expect(spies.menuDomainServiceMock.getMenu).toHaveBeenCalledTimes(2);
-    });
-  });
-
   describe('buildSections', () => {
     it('should group dishes into sections in category order', () => {
       const salads = Arrange.createCategory();
@@ -120,18 +59,78 @@ describe(MenuStoreService.name, () => {
     });
   });
 
-  describe('eventUpdater', () => {
+  describe('menuStreamUpdater', () => {
+    it('should replace the whole menu with a snapshot', () => {
+      const salads = Arrange.createCategory();
+      const caesar = Arrange.createDish();
+      const service = Arrange.setup();
+
+      const state = Arrange.applyToStore(
+        service.menuStreamUpdater({
+          kind: LiveResourceUpdateKind.Snapshot,
+          snapshot: { categories: [salads], dishes: [caesar] },
+        }),
+        Arrange.createStoreState(
+          Arrange.createState([], [Arrange.createDish({ id: 'd-old' })]),
+          LoadStatus.Loading,
+        ),
+      );
+
+      expect(state).toEqual(
+        Arrange.createStoreState(
+          Arrange.createState([salads], [caesar]),
+          LoadStatus.Loaded,
+        ),
+      );
+    });
+
+    it('should show a readable error while there is no menu', () => {
+      const service = Arrange.setup();
+
+      const state = Arrange.applyToStore(
+        service.menuStreamUpdater({
+          kind: LiveResourceUpdateKind.SnapshotFailed,
+          error: new Error('Failed'),
+        }),
+        Arrange.createStoreState(
+          Arrange.createState([], []),
+          LoadStatus.Loading,
+        ),
+      );
+
+      expect(state.status).toBe(LoadStatus.Error);
+      expect(state.error).toBe('Something went wrong. Please try again.');
+    });
+
+    it('should keep a shown menu when a reload fails', () => {
+      const service = Arrange.setup();
+      const shown = Arrange.createStoreState(
+        Arrange.createState([Arrange.createCategory()], [Arrange.createDish()]),
+        LoadStatus.Loaded,
+      );
+
+      const state = Arrange.applyToStore(
+        service.menuStreamUpdater({
+          kind: LiveResourceUpdateKind.SnapshotFailed,
+          error: new Error('Failed'),
+        }),
+        shown,
+      );
+
+      expect(state).toEqual(shown);
+    });
+  });
+
+  describe('menu events', () => {
     it('should replace an existing dish in place on upsert', () => {
       const caesar = Arrange.createDish();
       const greek = Arrange.createDish({ id: 'd-greek', name: 'Greek Salad' });
       const repriced = { ...caesar, price: 1500 };
       const service = Arrange.setup();
 
-      const state = Arrange.apply(
-        service.eventUpdater({
-          type: MenuEventType.DishUpserted,
-          dish: repriced,
-        }),
+      const state = Arrange.applyEvent(
+        service,
+        { type: MenuEventType.DishUpserted, dish: repriced },
         Arrange.createState([], [caesar, greek]),
       );
 
@@ -144,11 +143,9 @@ describe(MenuStoreService.name, () => {
       const soups = Arrange.createCategory({ id: 'c-soups', name: 'Soups' });
       const service = Arrange.setup();
 
-      const state = Arrange.apply(
-        service.eventUpdater({
-          type: MenuEventType.CategoryUpserted,
-          category: soups,
-        }),
+      const state = Arrange.applyEvent(
+        service,
+        { type: MenuEventType.CategoryUpserted, category: soups },
         Arrange.createState([salads], []),
       );
 
@@ -160,16 +157,12 @@ describe(MenuStoreService.name, () => {
       const caesar = Arrange.createDish();
       const service = Arrange.setup();
 
-      const state = Arrange.apply(
-        service.eventUpdater({
-          type: MenuEventType.CategoryDeleted,
-          categoryId: salads.id,
-        }),
-        Arrange.apply(
-          service.eventUpdater({
-            type: MenuEventType.DishDeleted,
-            dishId: caesar.id,
-          }),
+      const state = Arrange.applyEvent(
+        service,
+        { type: MenuEventType.CategoryDeleted, categoryId: salads.id },
+        Arrange.applyEvent(
+          service,
+          { type: MenuEventType.DishDeleted, dishId: caesar.id },
           Arrange.createState([salads], [caesar]),
         ),
       );
@@ -180,54 +173,37 @@ describe(MenuStoreService.name, () => {
   });
 });
 
-interface Spies {
-  menuDomainServiceMock: { getMenu: Mock };
-  sseServiceMock: {
-    opened$: Subject<void>;
-    events$: Subject<ServerEvent>;
-  };
-}
-
 const Arrange = {
-  setup(spies: Spies = Arrange.createSpies()) {
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: MenuDomainService, useValue: spies.menuDomainServiceMock },
-        { provide: SseService, useValue: spies.sseServiceMock },
-      ],
-    });
+  setup() {
+    TestBed.configureTestingModule({ providers: [MenuStoreService] });
 
     return TestBed.inject(MenuStoreService);
   },
 
-  createSpies(): Spies {
-    return {
-      menuDomainServiceMock: {
-        getMenu: vi.fn().mockReturnValue(of(Arrange.createMenu())),
-      } satisfies Mocked<Pick<MenuDomainService, 'getMenu'>>,
-      sseServiceMock: {
-        opened$: new Subject<void>(),
-        events$: new Subject<ServerEvent>(),
-      } satisfies Pick<SseService, 'opened$' | 'events$'>,
-    };
+  /** Applies one event of the menu stream to a shown menu. */
+  applyEvent(
+    service: MenuStoreService,
+    event: MenuEvent,
+    entities: MenuEntitiesState,
+  ): MenuStoreState {
+    return Arrange.applyToStore(
+      service.menuStreamUpdater({ kind: LiveResourceUpdateKind.Event, event }),
+      Arrange.createStoreState(entities, LoadStatus.Loaded),
+    );
   },
 
-  createMenu(): MenuDomainModel {
-    return {
-      categories: [Arrange.createCategory()],
-      dishes: [Arrange.createDish()],
-    };
-  },
-
-  createDishDeleted(dishId: string): ServerEvent {
-    return { type: MenuEventType.DishDeleted, dishId };
-  },
-
-  apply(
-    updater: ReturnType<MenuStoreService['eventUpdater']>,
-    state: MenuEntitiesState,
-  ): MenuEntitiesState {
+  applyToStore(
+    updater: PartialStateUpdater<MenuStoreState>,
+    state: MenuStoreState,
+  ): MenuStoreState {
     return { ...state, ...updater(state) };
+  },
+
+  createStoreState(
+    entities: MenuEntitiesState,
+    status: LoadStatus,
+  ): MenuStoreState {
+    return { ...entities, status, error: null };
   },
 
   createState(categories: Category[], dishes: Dish[]): MenuEntitiesState {

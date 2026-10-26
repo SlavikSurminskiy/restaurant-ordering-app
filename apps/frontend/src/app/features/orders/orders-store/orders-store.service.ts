@@ -1,42 +1,57 @@
-import { inject, Service } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Service } from '@angular/core';
+import type { PartialStateUpdater } from '@ngrx/signals';
+import { setAllEntities, setEntity } from '@ngrx/signals/entities';
 
-import type { OrderEvent, ServerEvent } from '@restaurant/shared-api-types';
 import {
   OrderDomainModel,
-  OrdersDomainService,
+  OrderStreamUpdate,
 } from '@restaurant/frontend/domain/orders';
-import { SnapshotSyncService } from '@restaurant/frontend/core/realtime';
+import { LiveResourceUpdateKind } from '@restaurant/frontend/domain/sse';
+import { errorMessage } from '@restaurant/frontend/core/http';
 
-import { ORDER_EVENT_TYPES } from './orders-store.constants';
-import { OrderUpdate } from './orders-store.models';
+import { LoadStatus } from '../../menu/menu-store/menu-store.enums';
+
+import { orderConfig } from './orders-store.constants';
+import { OrdersEntitiesState, OrdersStoreState } from './orders-store.models';
 
 @Service()
 export class OrdersStoreService {
-  readonly #ordersDomainService = inject(OrdersDomainService);
-  readonly #snapshotSyncService = inject(SnapshotSyncService);
-
-  orderUpdates(): Observable<OrderUpdate> {
-    return this.#snapshotSyncService.sync({
-      loadSnapshot: () => this.#ordersDomainService.getOrders(),
-      isEvent: (event): event is OrderEvent => this.#isOrderEvent(event),
-    });
-  }
-
   /** Newest first, like the server's list. */
   sortNewestFirst(orders: OrderDomainModel[]): OrderDomainModel[] {
     return [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  /** An event and the answer to a status change can arrive in either order; the later state wins. */
-  isNewer(
-    order: OrderDomainModel,
-    current: OrderDomainModel | undefined,
-  ): boolean {
-    return !current || order.updatedAt >= current.updatedAt;
+  ordersStreamUpdater(
+    update: OrderStreamUpdate,
+  ): PartialStateUpdater<OrdersStoreState> {
+    switch (update.kind) {
+      case LiveResourceUpdateKind.Snapshot:
+        return (state) => ({
+          ...setAllEntities(update.snapshot, orderConfig)(state),
+          status: LoadStatus.Loaded,
+          error: null,
+        });
+      case LiveResourceUpdateKind.SnapshotFailed:
+        // Shown orders stay on screen while the reload is retried.
+        return (state) =>
+          state.status === LoadStatus.Loaded
+            ? {}
+            : { status: LoadStatus.Error, error: errorMessage(update.error) };
+      case LiveResourceUpdateKind.Event:
+        return this.orderUpdater(update.event.order);
+    }
   }
 
-  #isOrderEvent(event: ServerEvent): event is OrderEvent {
-    return ORDER_EVENT_TYPES.includes(event.type);
+  /** An event and the answer to a status change can arrive in either order; the later state wins. */
+  orderUpdater(
+    order: OrderDomainModel,
+  ): PartialStateUpdater<OrdersEntitiesState> {
+    return (state) => {
+      const current = state.orderEntityMap[order.id];
+
+      return !current || order.updatedAt >= current.updatedAt
+        ? setEntity(order, orderConfig)(state)
+        : {};
+    };
   }
 }

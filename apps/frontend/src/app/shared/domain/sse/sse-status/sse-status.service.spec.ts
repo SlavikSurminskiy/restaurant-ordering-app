@@ -1,14 +1,16 @@
 import { signal, WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { NetworkStatusService } from '../../network/network-status/network-status.service';
-import { SseStreamStatus } from '../sse.models';
-import { SseService } from '../sse.service';
+import { NetworkStatusService } from '@restaurant/frontend/core/network';
+import {
+  SseStreamStatus,
+  SseDataAccessService,
+} from '@restaurant/frontend/data-access/sse';
 
-import { SseConnectionStatus } from './sse-connection-status.enums';
-import { SseConnectionStatusService } from './sse-connection-status.service';
+import { SseConnectionStatus } from './sse-status.enums';
+import { SseStatusService } from './sse-status.service';
 
-describe(SseConnectionStatusService.name, () => {
+describe(SseStatusService.name, () => {
   it.each([
     SseStreamStatus.Disconnected,
     SseStreamStatus.Connecting,
@@ -16,7 +18,7 @@ describe(SseConnectionStatusService.name, () => {
     SseStreamStatus.Reconnecting,
   ])('should report the %s stream status while online', (streamStatus) => {
     const spies = Arrange.createSpies();
-    spies.sseServiceMock.status.set(streamStatus);
+    spies.sseDataAccessServiceMock.status.set(streamStatus);
 
     const service = Arrange.setup(spies);
 
@@ -25,7 +27,7 @@ describe(SseConnectionStatusService.name, () => {
 
   it('should report offline while the browser is offline, whatever the stream does', () => {
     const spies = Arrange.createSpies();
-    spies.sseServiceMock.status.set(SseStreamStatus.Online);
+    spies.sseDataAccessServiceMock.status.set(SseStreamStatus.Online);
     const service = Arrange.setup(spies);
 
     spies.networkStatusServiceMock.isOnline.set(false);
@@ -37,7 +39,7 @@ describe(SseConnectionStatusService.name, () => {
 });
 
 interface Spies {
-  sseServiceMock: { status: WritableSignal<SseStreamStatus> };
+  sseDataAccessServiceMock: { status: WritableSignal<SseStreamStatus> };
   networkStatusServiceMock: { isOnline: WritableSignal<boolean> };
 }
 
@@ -45,7 +47,10 @@ const Arrange = {
   setup(spies: Spies) {
     TestBed.configureTestingModule({
       providers: [
-        { provide: SseService, useValue: spies.sseServiceMock },
+        {
+          provide: SseDataAccessService,
+          useValue: spies.sseDataAccessServiceMock,
+        },
         {
           provide: NetworkStatusService,
           useValue: spies.networkStatusServiceMock,
@@ -53,14 +58,14 @@ const Arrange = {
       ],
     });
 
-    return TestBed.inject(SseConnectionStatusService);
+    return TestBed.inject(SseStatusService);
   },
 
   createSpies(): Spies {
     return {
-      sseServiceMock: {
+      sseDataAccessServiceMock: {
         status: signal<SseStreamStatus>(SseStreamStatus.Disconnected),
-      } satisfies Pick<SseService, 'status'>,
+      } satisfies Pick<SseDataAccessService, 'status'>,
       networkStatusServiceMock: {
         isOnline: signal(true),
       } satisfies Pick<NetworkStatusService, 'isOnline'>,
