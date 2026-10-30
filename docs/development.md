@@ -21,6 +21,28 @@
 
 Database commands start PostgreSQL themselves if it isn't running. For a single project: `pnpm nx <target> <project>`, e.g. `pnpm nx test frontend`. `pnpm nx run backend:prepare-deploy` builds the backend into `dist/apps/backend` ready to install outside the monorepo ([details](architecture.md#deploy-output)).
 
+## Docker images
+
+Both images build from the repository root:
+
+```bash
+docker build -f apps/backend/Dockerfile -t restaurant-backend .
+docker build -f apps/frontend/Dockerfile -t restaurant-frontend .
+```
+
+- **Backend** listens on 3000 and needs `DATABASE_URL` and `JWT_SECRET` (at least 32 characters, because the image sets `NODE_ENV=production`). It does not run migrations.
+- **Frontend** is nginx on 8080 (non-root). It serves the Angular build, falls back to `index.html` for client-side routes and proxies `/api` to `BACKEND_URL` (default `http://backend:3000`), without buffering `/api/events`. The config is `apps/frontend/nginx.conf.template`.
+
+To try them together, put both containers on one network and name the backend `backend`:
+
+```bash
+docker network create restaurant
+docker run -d --name backend --network restaurant \
+  -e DATABASE_URL=postgresql://restaurant_user:restaurant_password@host.docker.internal:5432/restaurant_db \
+  -e JWT_SECRET=<32+ characters> restaurant-backend
+docker run -d --name frontend --network restaurant -p 8080:8080 restaurant-frontend
+```
+
 ## Configuration
 
 `.env.example` is the committed template with local development defaults; `.env` is your git-ignored local copy. Notable variables:
