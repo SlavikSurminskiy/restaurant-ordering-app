@@ -228,6 +228,9 @@ importers:
       '@restaurant/shared-utils':
         specifier: workspace:*
         version: link:../../libs/shared/utils
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
 
   apps/frontend:
     dependencies:

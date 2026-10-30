@@ -19,7 +19,7 @@
 | `pnpm db:seed`      | `prisma db seed`                               |
 | `pnpm db:studio`    | Open Prisma Studio                             |
 
-Database commands start PostgreSQL themselves if it isn't running. For a single project: `pnpm nx <target> <project>`, e.g. `pnpm nx test frontend`.
+Database commands start PostgreSQL themselves if it isn't running. For a single project: `pnpm nx <target> <project>`, e.g. `pnpm nx test frontend`. `pnpm nx run backend:prepare-deploy` builds the backend into `dist/apps/backend` ready to install outside the monorepo ([details](architecture.md#deploy-output)).
 
 ## Configuration
 

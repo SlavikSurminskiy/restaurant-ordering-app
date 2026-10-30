@@ -28,7 +28,7 @@ A plan, not yet implemented. The goal is a free public deployment that doubles a
 
 ### 1. Container images
 
-- `apps/backend/Dockerfile`, multi-stage: `pnpm install --frozen-lockfile` → `nx build backend` → runtime stage on `node:24-slim` with `dist/apps/backend` and its generated `package.json` (production dependencies only), a non-root user, `NODE_ENV=production`.
+- `apps/backend/Dockerfile`, multi-stage: `pnpm install --frozen-lockfile` → `nx run backend:prepare-deploy` → runtime stage on `node:24-slim` with `main.js`, `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` from `dist/apps/backend` and `pnpm install --prod --frozen-lockfile`, a non-root user, `NODE_ENV=production`. See [architecture.md](architecture.md#deploy-output).
 - `apps/frontend/Dockerfile`: `nx build frontend` → `nginx` serving the static files with an SPA fallback to `index.html`, and proxying `/api` to the backend service. For `/api/events`: `proxy_buffering off`, `proxy_read_timeout` above the 20 s heartbeat, HTTP/1.1 to the upstream.
 - A migrate image (or a target of the backend Dockerfile) with the Prisma CLI, `libs/database/prisma` and `prisma.config.ts`; its command is `prisma migrate deploy`.
 - `.dockerignore`: `node_modules`, `dist`, `.nx`, `.env*`, `libs/database/src/generated`.
