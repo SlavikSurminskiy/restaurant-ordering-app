@@ -32,8 +32,16 @@ ENV NODE_ENV=production \
 RUN corepack enable
 
 COPY --from=build /repo/dist/apps/backend/package.json /repo/dist/apps/backend/pnpm-lock.yaml /repo/dist/apps/backend/pnpm-workspace.yaml ./
+# --no-optional skips optional dependencies and optional peers. The lockfile comes from the
+# monorepo, where pnpm linked the optional peers `prisma` (CLI with Studio and React) and
+# `typescript` to @prisma/client; unused at runtime, they are most of node_modules.
+# A package that ships native binaries as optionalDependencies would need this revisited.
+# pnpm's metadata cache (fetched for the supply-chain policy check) and pnpm itself (downloaded
+# by Corepack) are mounted too, so they stay out of the layer.
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --prod --frozen-lockfile --store-dir /pnpm/store
+    --mount=type=cache,id=pnpm-metadata,target=/root/.cache/pnpm \
+    --mount=type=cache,id=corepack,target=/root/.cache/node/corepack \
+    pnpm install --prod --frozen-lockfile --no-optional --store-dir /pnpm/store
 COPY --from=build /repo/dist/apps/backend/main.js ./
 
 USER node
