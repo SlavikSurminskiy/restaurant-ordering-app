@@ -23,23 +23,26 @@ Database commands start PostgreSQL themselves if it isn't running. For a single 
 
 ## Docker images
 
-Both images build from the repository root:
+All images build from the repository root:
 
 ```bash
 docker build -f apps/backend/Dockerfile -t restaurant-backend .
 docker build -f apps/frontend/Dockerfile -t restaurant-frontend .
+docker build -f libs/database/Dockerfile -t restaurant-migrate .
 ```
 
+- **Migrate** runs `prisma migrate deploy` against `DATABASE_URL` and exits: 0 when the database is up to date, non-zero on failure, so the backend can start only after it succeeds. Run it before every backend release. It holds the Prisma CLI (at the root `package.json` version) with the schema and migrations; it does not seed.
 - **Backend** listens on 3000 and needs `DATABASE_URL` and `JWT_SECRET` (at least 32 characters, because the image sets `NODE_ENV=production`). It does not run migrations.
 - **Frontend** is nginx on 8080 (non-root). It serves the Angular build, falls back to `index.html` for client-side routes and proxies `/api` to `BACKEND_URL` (default `http://backend:3000`), without buffering `/api/events`. The config is `apps/frontend/nginx.conf.template`.
 
 To try them together, put both containers on one network and name the backend `backend`:
 
 ```bash
+DB=postgresql://restaurant_user:restaurant_password@host.docker.internal:5432/restaurant_db
 docker network create restaurant
+docker run --rm -e DATABASE_URL=$DB restaurant-migrate
 docker run -d --name backend --network restaurant \
-  -e DATABASE_URL=postgresql://restaurant_user:restaurant_password@host.docker.internal:5432/restaurant_db \
-  -e JWT_SECRET=<32+ characters> restaurant-backend
+  -e DATABASE_URL=$DB -e JWT_SECRET=<32+ characters> restaurant-backend
 docker run -d --name frontend --network restaurant -p 8080:8080 restaurant-frontend
 ```
 
