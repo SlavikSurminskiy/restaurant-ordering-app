@@ -54,10 +54,11 @@ __screenshots__/
 vitest.config.*.timestamp*
 .vitest
 
-# env files: only the template is committed
+# env files: only the templates are committed
 .env
 .env.*
 !.env.example
+!.env.prod.example
 
 # Prisma generated client
 libs/database/src/generated

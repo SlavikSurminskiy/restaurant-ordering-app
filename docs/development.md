@@ -35,16 +35,28 @@ docker build -f libs/database/Dockerfile -t restaurant-migrate .
 - **Backend** listens on 3000 and needs `DATABASE_URL` and `JWT_SECRET` (at least 32 characters, because the image sets `NODE_ENV=production`). It does not run migrations.
 - **Frontend** is nginx on 8080 (non-root). It serves the Angular build, falls back to `index.html` for client-side routes and proxies `/api` to `BACKEND_URL` (default `http://backend:3000`), without buffering `/api/events`. The config is `apps/frontend/nginx.conf.template`.
 
-To try them together, put both containers on one network and name the backend `backend`:
+### Production-like stack
+
+`docker-compose.prod.yml` builds the images and runs Postgres → migrate → backend → frontend on http://localhost:8080. It is a separate compose project (`restaurant-prod`) with its own volume, so it does not touch the development database:
 
 ```bash
-DB=postgresql://restaurant_user:restaurant_password@host.docker.internal:5432/restaurant_db
-docker network create restaurant
-docker run --rm -e DATABASE_URL=$DB restaurant-migrate
-docker run -d --name backend --network restaurant \
-  -e DATABASE_URL=$DB -e JWT_SECRET=<32+ characters> restaurant-backend
-docker run -d --name frontend --network restaurant -p 8080:8080 restaurant-frontend
+cp .env.prod.example .env.prod      # git-ignored; set POSTGRES_PASSWORD and a 32+ character JWT_SECRET
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod down    # add -v to delete the data
 ```
+
+- Always pass `--env-file .env.prod`: without it Compose reads the development `.env`, whose `JWT_SECRET` is too short for `NODE_ENV=production`.
+- The backend starts only after `migrate` exits with 0, and the frontend only after the backend's `/api/health` answers.
+- `POSTGRES_*` initialise the volume on its first start only. Changing `POSTGRES_PASSWORD` later does not change the database password, so `migrate` fails with `P1000` and the backend does not start.
+- The database starts empty. To log in locally, seed it from the host through the port bound to `127.0.0.1` (demo users, local use only):
+
+  ```bash
+  set -a; . ./.env.prod; set +a
+  DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB" \
+    pnpm nx run database:prisma-seed --excludeTaskDependencies
+  ```
+
+  A variable set in the shell wins over the root `.env` that Nx loads; `--excludeTaskDependencies` skips `postgres-up` and `prisma-migrate-deploy`, which target the development database.
 
 ## Configuration
 

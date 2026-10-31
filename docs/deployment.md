@@ -1,6 +1,6 @@
 # Deployment plan
 
-A plan, not yet implemented. The goal is a free public deployment that doubles as Kubernetes practice, with OpenTelemetry added later. Free-tier terms change often; check them before choosing.
+Step 1 (container images) is done; the later steps are still a plan. The goal is a free public deployment that doubles as Kubernetes practice, with OpenTelemetry added later. Free-tier terms change often; check them before choosing.
 
 ## Constraints from the current code
 
@@ -30,9 +30,9 @@ A plan, not yet implemented. The goal is a free public deployment that doubles a
 
 - `apps/backend/Dockerfile`, multi-stage: `pnpm install --frozen-lockfile` → `nx run backend:prepare-deploy` → runtime stage on `node:24-slim` with `main.js`, `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` from `dist/apps/backend` and `pnpm install --prod --frozen-lockfile`, a non-root user, `NODE_ENV=production`. See [architecture.md](architecture.md#deploy-output).
 - `apps/frontend/Dockerfile`: `nx build frontend` → `nginx` serving the static files with an SPA fallback to `index.html`, and proxying `/api` to the backend service. For `/api/events`: `proxy_buffering off`, `proxy_read_timeout` above the 20 s heartbeat, HTTP/1.1 to the upstream.
-- A migrate image (or a target of the backend Dockerfile) with the Prisma CLI, `libs/database/prisma` and `prisma.config.ts`; its command is `prisma migrate deploy`.
+- `libs/database/Dockerfile`: a migrate image with only the Prisma CLI (root `package.json` version), `libs/database/prisma` and `prisma.config.ts`; its command is `prisma migrate deploy`.
 - `.dockerignore`: `node_modules`, `dist`, `.nx`, `.env*`, `libs/database/src/generated`.
-- Check: a `docker-compose.prod.yml` (or a profile in `docker-compose.yml`) runs Postgres → migrate → backend → frontend locally on http://localhost:8080.
+- Check: `docker-compose.prod.yml` runs Postgres → migrate → backend → frontend locally on http://localhost:8080 ([how](development.md#production-like-stack)).
 
 ### 2. Kubernetes manifests, run locally on k3d
 
