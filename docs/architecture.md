@@ -84,4 +84,18 @@ Single-version policy: all third-party packages (Angular, NestJS, Prisma, toolin
 
 Nx generates `dist/<app>/package.json` for deployment itself: it finds external dependencies from imports in the code (including transitively through libraries) and takes versions from the root.
 
-The exception is a package Nx cannot see in imports. Declare it in the `package.json` of the project that uses it, with the same version as in the root. Currently there is one: `@prisma/client` in `libs/database/package.json`. It is imported by the generated Prisma Client, and `src/generated` is git-ignored, so Nx does not analyze it. Without this entry `@prisma/client` would be missing from `dist/apps/backend/package.json`, and the backend would crash on startup in a Docker image. When upgrading Prisma, change the version in both places.
+The exception is a package Nx cannot see in imports. Declare it in the `package.json` of the project that uses it, with the same version as in the root; when upgrading it, change the version in both places. Without such an entry the package would be missing from `dist/apps/backend/package.json`, and the backend would crash on startup in a Docker image. Currently there are two:
+
+- `@prisma/client` in `libs/database/package.json`. It is imported by the generated Prisma Client, and `src/generated` is git-ignored, so Nx does not analyze it.
+- `tslib` in `apps/backend/package.json`. `importHelpers` in `tsconfig.base.json` makes the compiler emit `require("tslib")` for helpers such as `__decorate` and `__metadata`; the import exists only in the compiled code.
+
+### Deploy output
+
+`pnpm nx run backend:prepare-deploy` turns `dist/apps/backend` into a folder that installs outside the monorepo with `pnpm install --prod --frozen-lockfile`. After `build` (which writes `main.js`, `package.json` and a lockfile), it:
+
+1. Removes `workspace:*` dependencies from `package.json` (`apps/backend/scripts/strip-workspace-deps.mjs`). Webpack bundles the workspace libraries into `main.js` through `paths`, and outside the monorepo pnpm cannot resolve `workspace:*`.
+2. Runs `pnpm install --lockfile-only` there, which brings the lockfile in line with the edited `package.json` and keeps the resolved versions.
+
+The image installs this output with `pnpm install --prod --frozen-lockfile --no-optional`. pnpm links an optional peer whenever any project in the workspace has it, even as a dev dependency, so the root lockfile ties `prisma` (the CLI with Studio and React) and `typescript` to `@prisma/client`, and the pruned lockfile keeps that link. `--no-optional` leaves them out (about 280 MB of `node_modules`, unused at runtime), together with every other optional dependency and optional peer. Alternatives that were tried: a `readPackage` hook in `.pnpmfile.cjs` is precise but the lockfile records its checksum, so the hook has to ship into the image; `autoInstallPeers: false` needs `--fix-lockfile`; `overrides` with `"-"` does not apply to peers. If the backend ever needs a package that ships native binaries as `optionalDependencies` (`sharp`, `bcrypt` prebuilds and the like), revisit `--no-optional`.
+
+Nx's own `prune`, `prune-lockfile` and `copy-workspace-modules` targets (added by the Nest generator) are not used. They are built for the TS solution setup, where every project declares its own dependencies and libraries stay separate packages at runtime: `prune-lockfile` rewrites `dist/apps/backend/package.json` from `apps/backend/package.json`, which here holds only `workspace:*` links, and drops every third-party dependency.

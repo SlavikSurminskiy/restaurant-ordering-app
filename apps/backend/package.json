@@ -5,6 +5,7 @@
   "dependencies": {
     "@restaurant/database": "workspace:*",
     "@restaurant/shared-api-types": "workspace:*",
-    "@restaurant/shared-utils": "workspace:*"
+    "@restaurant/shared-utils": "workspace:*",
+    "tslib": "^2.3.0"
   }
 }

@@ -1,0 +1,47 @@
+# ${BACKEND_URL} is replaced on container start; nginx's own $variables are left as they are.
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # Server-Sent Events: nginx must pass every event on at once instead of buffering the
+    # response, and keep the stream open longer than the backend's 20 s heartbeat.
+    location = /api/events {
+        proxy_pass ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Connection '';
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 1h;
+    }
+
+    location /api/ {
+        proxy_pass ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Built JS and CSS have content hashes in their names, so they never change.
+    location ~* \.(?:js|css)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # index.html points to the current hashed files, so browsers must revalidate it.
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    # Client-side routes (/menu, /orders, …) fall back to the app.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

@@ -1,0 +1,22 @@
+# Keeps the build context small and local state out of images.
+.git
+**/node_modules
+dist
+tmp
+out-tsc
+coverage
+.nx
+.angular
+.vitest
+.idea
+.vscode
+.claude
+**/.omc
+
+# Secrets: deployed environments get variables from the platform
+.env
+.env.*
+!.env.example
+
+# Regenerated inside the image
+libs/database/src/generated

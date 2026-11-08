@@ -35,7 +35,7 @@ This is a prototype built to show the frontend architecture and real-time flow. 
 
 ### Operations
 
-- Docker images for the backend and the static frontend, `prisma migrate deploy` as a release step, and no seed outside development.
+- Docker images for the backend and the static frontend, `prisma migrate deploy` as a release step, and no seed outside development. The step-by-step plan, including Kubernetes and OpenTelemetry: [deployment.md](deployment.md).
 - Health checks, structured logs, metrics and error tracking.
 - End-to-end tests (Playwright) for the main flows: live menu changes, a double-clicked checkout, a 409 on a changed price, live order statuses.
 - A performance budget: `@defer` for dialogs and below-the-fold content, and Lighthouse checks on the menu page in CI.

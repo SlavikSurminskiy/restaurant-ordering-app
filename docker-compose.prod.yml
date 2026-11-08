@@ -1,0 +1,90 @@
+# Production-like stack from the Docker images: Postgres → migrate → backend → frontend.
+# Separate from the development docker-compose.yml: own project name, volume and ports.
+#   cp .env.prod.example .env.prod   # then set real secrets
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# App: http://localhost:8080
+
+name: restaurant-prod
+
+# Built from the POSTGRES_* variables; a password with URL-reserved characters (@ : / ? #)
+# must be percent-encoded.
+x-database-url: &database-url postgresql://${POSTGRES_USER:?set in .env.prod}:${POSTGRES_PASSWORD:?set in .env.prod}@postgres:5432/${POSTGRES_DB:?set in .env.prod}
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    # Only for the seed and psql from this machine: bound to localhost, never to the network.
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5433}:5432'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Runs once per `up` and exits; the backend starts only if it exits with 0.
+  migrate:
+    build:
+      context: .
+      dockerfile: libs/database/Dockerfile
+    image: restaurant-migrate
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    image: restaurant-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *database-url
+      JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
+      JWT_TTL: ${JWT_TTL:-28800}
+      ORDER_DISCOUNT: ${ORDER_DISCOUNT:-500}
+      ORDER_STATUS_STEP_SECONDS: ${ORDER_STATUS_STEP_SECONDS:-20}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # The image has no curl; Node's fetch does the same.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    image: restaurant-frontend
+    restart: unless-stopped
+    ports:
+      - '${FRONTEND_PORT:-8080}:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
