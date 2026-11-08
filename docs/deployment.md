@@ -1,6 +1,6 @@
 # Deployment plan
 
-Step 1 (container images) is done; the later steps are still a plan. The goal is a free public deployment that doubles as Kubernetes practice, with OpenTelemetry added later. Free-tier terms change often; check them before choosing.
+Steps 1 (container images) and 3 (CI images) are done; the other steps are still a plan. The goal is a free public deployment that doubles as Kubernetes practice, with OpenTelemetry added later. Free-tier terms change often; check them before choosing.
 
 ## Constraints from the current code
 
@@ -53,8 +53,13 @@ Check: `k3d cluster create`, import or pull the images, `kubectl apply -k deploy
 
 ### 3. CI: images to a registry
 
-- A GitHub Actions workflow on `main` (after the existing `CI` checks) builds the three images with `docker buildx` for `linux/amd64` and `linux/arm64` (Oracle A1 is ARM) and pushes them to GHCR, tagged with the commit SHA.
-- Manifests reference images by SHA tag, never `latest`.
+Done: `.github/workflows/images.yml`.
+
+- Runs on pull requests, on pushes to `main` and manually (`workflow_dispatch`); changes only to docs, Markdown or `deploy/` don't trigger it.
+- Builds the three images for `linux/arm64` only (Oracle A1 is ARM) on an ARM runner (`ubuntu-24.04-arm`, free for public repositories), so nothing runs under QEMU. They don't run on amd64 nodes; adding `linux/amd64` later means QEMU with `FROM --platform=$BUILDPLATFORM` for the build stages, or a build per platform joined into one multi-arch tag.
+- Pushes to `ghcr.io/slaviksurminskiy/restaurant-{backend,frontend,migrate}` with the built-in `GITHUB_TOKEN`, tagged with the short SHA of the commit (for a PR, its last commit, not GitHub's merge commit), plus `main` on the main branch.
+- A smoke test runs the migrate image against an empty Postgres.
+- Manifests reference images by SHA tag, never `latest`. Every environment deploys the same image; environments differ only in configuration and secrets.
 
 ### 4. Oracle Always Free with k3s
 
