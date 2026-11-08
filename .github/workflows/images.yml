@@ -1,0 +1,89 @@
+name: Images
+
+# Builds the backend, frontend and migrate images for arm64 (the Oracle Cloud Ampere A1 nodes) and
+# pushes them to GHCR, tagged with the short commit SHA (plus `main` on the main branch).
+on:
+  pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'deploy/**']
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'deploy/**']
+  # The "Run workflow" button in the Actions tab, for any branch.
+  workflow_dispatch:
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/slaviksurminskiy
+  # The commit the images are built from. For a PR it is the branch's last commit, not the
+  # temporary merge commit GitHub creates for the PR (github.sha).
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  build:
+    name: build ${{ matrix.image.name }}
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - { name: restaurant-backend, dockerfile: apps/backend/Dockerfile }
+          - { name: restaurant-frontend, dockerfile: apps/frontend/Dockerfile }
+          - { name: restaurant-migrate, dockerfile: libs/database/Dockerfile }
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+
+      - id: tag
+        run: echo "short-sha=${SOURCE_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # BuildKit builder; needed for the GitHub Actions layer cache.
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.image.dockerfile }}
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ matrix.image.name }}:${{ steps.tag.outputs.short-sha }}
+            ${{ github.ref == 'refs/heads/main' && format('{0}/{1}:main', env.REGISTRY, matrix.image.name) || '' }}
+          cache-from: type=gha,scope=${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
+
+  # Runs the pushed migrate image against an empty Postgres: checks that Prisma finds a working
+  # schema engine on arm64.
+  smoke-migrate:
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - id: tag
+        run: echo "short-sha=${SOURCE_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name postgres -p 5432:5432 \
+            -e POSTGRES_USER=app -e POSTGRES_PASSWORD=app -e POSTGRES_DB=app postgres:18-alpine
+          until docker exec postgres pg_isready -h 127.0.0.1 -U app -d app; do sleep 1; done
+
+      - name: Apply migrations
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL=postgresql://app:app@127.0.0.1:5432/app \
+            "$REGISTRY/restaurant-migrate:${{ steps.tag.outputs.short-sha }}"
+          docker exec postgres psql -U app -d app -c 'SELECT migration_name, finished_at FROM _prisma_migrations'
