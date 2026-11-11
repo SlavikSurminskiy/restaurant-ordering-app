@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (git-ignored) and fill in. Terraform loads terraform.tfvars automatically.
+region           = "eu-frankfurt-1"
+tenancy_ocid     = "ocid1.tenancy.oc1..change-me"
+compartment_ocid = "ocid1.compartment.oc1..change-me"
