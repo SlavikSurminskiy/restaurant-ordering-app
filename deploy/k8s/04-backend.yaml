@@ -7,7 +7,7 @@
 #                     Service name is the host nginx sends /api to (BACKEND_URL=http://backend:3000)
 #   role: api         label; any key/value, it only has to be the same in the three places marked [L]
 #   http              port name; the Service's targetPort and the probes refer to the container port by it
-#   postgres, backend names of the Secrets created in step 3
+#   postgres, backend Secrets created by hand (docs/deployment.md, step 4)
 #   db                host name = the Service from 02-postgres.yaml
 
 # Non-secret settings. Values are always strings. Changing them does not restart running pods:

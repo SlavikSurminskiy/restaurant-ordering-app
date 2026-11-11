@@ -7,7 +7,7 @@
 #   role: database    label; any key/value, it only has to be the same in the three places marked [L]
 #   sql               port name; the Service's targetPort refers to the container port by it
 #   pgdata            volume name; the container's volumeMounts refers to it, the PVC is pgdata-pg-server-0
-#   postgres          name of the Secret created in step 3 (kubectl create secret generic postgres)
+#   postgres          name of the Secret created by hand (docs/deployment.md, step 4)
 
 # Headless (clusterIP: None): the DNS name `db` resolves straight to the pod's IP, and the pod also
 # gets the stable name pg-server-0.db. A StatefulSet requires such a governing Service.
@@ -50,7 +50,7 @@ spec:
               containerPort: 5432 # Postgres listens on 5432 inside the container
           envFrom:
             - secretRef:
-                name: postgres # the Secret from step 3; its keys become env variables
+                name: postgres # the Secret created by hand; its keys become env variables
           # The disk's root holds lost+found; Postgres 18 keeps its data one level deeper
           # (/var/lib/postgresql/18/docker), so initdb does not see it.
           volumeMounts:

@@ -6,7 +6,7 @@
 #
 # Names in this file and how they are linked:
 #   migrate           Job name; its pod is migrate-<random suffix>
-#   postgres          Secret from step 3; the three keys are read one by one below
+#   postgres          Secret created by hand (docs/deployment.md, step 4); the three keys are read one by one below
 #   db                host name = the Service from 02-postgres.yaml
 apiVersion: batch/v1
 kind: Job
