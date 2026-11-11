@@ -1,0 +1,36 @@
+# The public address of the app: https://92-5-5-205.sslip.io -> Traefik -> the frontend Service.
+#   kubectl apply -f deploy/k8s/07-ingress.yaml
+#
+# Names in this file and how they are linked:
+#   92-5-5-205.sslip.io  sslip.io resolves it to 92.5.5.205, the IP of Traefik's load balancer
+#                        (kubectl -n traefik get svc traefik); a new load balancer means a new IP
+#   letsencrypt-prod     ClusterIssuer from 06-cluster-issuer.yaml; letsencrypt-staging while debugging
+#   restaurant-tls       Secret where cert-manager puts the certificate; Traefik reads it from there
+#   frontend, http       Service and port name from 05-frontend.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: restaurant
+  namespace: restaurant
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # HTTPS only; on port 80 Traefik redirects to HTTPS (deploy/helm/traefik-values.yaml).
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - 92-5-5-205.sslip.io
+      secretName: restaurant-tls
+  rules:
+    - host: 92-5-5-205.sslip.io
+      http:
+        paths:
+          # Every path goes to nginx; it serves the app and proxies /api itself.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http

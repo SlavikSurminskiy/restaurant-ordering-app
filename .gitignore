@@ -54,6 +54,12 @@ __screenshots__/
 vitest.config.*.timestamp*
 .vitest
 
+# Terraform: provider downloads, local state and real variable values (the lock file is committed)
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+
 # env files: only the templates are committed
 .env
 .env.*

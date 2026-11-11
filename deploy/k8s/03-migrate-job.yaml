@@ -1,0 +1,55 @@
+# One-off migration run: `prisma migrate deploy` against the database, then the pod exits.
+#   kubectl apply -f deploy/k8s/03-migrate-job.yaml
+# A Job's pod template cannot be changed, so to run it again (a new release, a new image tag):
+#   kubectl -n restaurant delete job migrate
+#   kubectl apply -f deploy/k8s/03-migrate-job.yaml
+#
+# Names in this file and how they are linked:
+#   migrate           Job name; its pod is migrate-<random suffix>
+#   postgres          Secret created by hand (docs/deployment.md, step 4); the three keys are read one by one below
+#   db                host name = the Service from 02-postgres.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  namespace: restaurant
+spec:
+  # A failed pod is replaced up to 4 times, with growing pauses (10 s, 20 s, 40 s, ...), e.g. while
+  # the database is still starting. After that the Job is Failed.
+  backoffLimit: 4
+  # Stop the whole Job if it has not finished in 10 minutes.
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      # The container exits when the migrations are done; Never = don't restart it in the same pod
+      # (failures are retried as new pods, see backoffLimit).
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/slaviksurminskiy/restaurant-migrate:d587d80
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_DB
+            # $(NAME) is replaced by Kubernetes with the variables defined above in this list,
+            # so the password is never written into a manifest.
+            - name: DATABASE_URL
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 512Mi

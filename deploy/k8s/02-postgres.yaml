@@ -1,0 +1,100 @@
+# PostgreSQL: one pod with its own disk.
+#   kubectl apply -f deploy/k8s/02-postgres.yaml
+#
+# Names in this file and how they are linked:
+#   db                Service name = the host name clients use (DATABASE_URL: ...@db:5432/...)
+#   pg-server         StatefulSet name; its pod is pg-server-0
+#   role: database    label; any key/value, it only has to be the same in the three places marked [L]
+#   sql               port name; the Service's targetPort refers to the container port by it
+#   pgdata            volume name; the container's volumeMounts refers to it, the PVC is pgdata-pg-server-0
+#   postgres          name of the Secret created by hand (docs/deployment.md, step 4)
+
+# Headless (clusterIP: None): the DNS name `db` resolves straight to the pod's IP, and the pod also
+# gets the stable name pg-server-0.db. A StatefulSet requires such a governing Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: restaurant
+spec:
+  clusterIP: None
+  selector:
+    role: database # [L] sends traffic to pods with this label
+  ports:
+    - name: sql
+      port: 5432
+      targetPort: sql # the container port named `sql` below
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pg-server
+  namespace: restaurant
+spec:
+  serviceName: db # the Service above; gives the pod its DNS name pg-server-0.db
+  replicas: 1
+  selector:
+    matchLabels:
+      role: database # [L] which pods this StatefulSet owns
+  template:
+    metadata:
+      labels:
+        role: database # [L] the label every created pod gets
+    spec:
+      containers:
+        - name: server # container name inside the pod; only used in logs/exec (-c server)
+          # Full name with the registry: CRI-O on OKE nodes refuses short names like postgres:18-alpine.
+          image: docker.io/library/postgres:18-alpine
+          ports:
+            - name: sql
+              containerPort: 5432 # Postgres listens on 5432 inside the container
+          envFrom:
+            - secretRef:
+                name: postgres # the Secret created by hand; its keys become env variables
+          # The disk's root holds lost+found; Postgres 18 keeps its data one level deeper
+          # (/var/lib/postgresql/18/docker), so initdb does not see it.
+          volumeMounts:
+            - name: pgdata # the volumeClaimTemplate below
+              mountPath: /var/lib/postgresql
+          # -h forces TCP: during first-run init the temporary server listens only on the unix socket.
+          readinessProbe:
+            exec:
+              command:
+                [
+                  'sh',
+                  '-c',
+                  'pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"',
+                ]
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                [
+                  'sh',
+                  '-c',
+                  'pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"',
+                ]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+          # The scheduler places the pod by these requests; each 1-OCPU node has about 0.9 CPU for pods.
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 512Mi
+  # One PVC per pod, named <template name>-<pod name> = pgdata-pg-server-0. It outlives the pod
+  # and the StatefulSet itself, so a recreated pg-server-0 gets the same data. No
+  # storageClassName: the cluster default (oci-bv on OKE, an OCI Block Volume) is used. The volume
+  # lives in one availability domain, so the pod can only run on a node in the same one.
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ['ReadWriteOnce']
+        resources:
+          requests:
+            # OCI block volumes are at least 50 GB; with the two 50 GB node boot volumes this
+            # uses 150 of the free 200 GB.
+            storage: 50Gi

@@ -1,0 +1,116 @@
+# NestJS API: settings, one pod and an in-cluster address for it.
+#   kubectl apply -f deploy/k8s/04-backend.yaml
+#
+# Names in this file and how they are linked:
+#   backend-config    ConfigMap name; the Deployment loads all its keys as env variables
+#   backend           Deployment name (pods are backend-<hash>-<suffix>) and Service name; the
+#                     Service name is the host nginx sends /api to (BACKEND_URL=http://backend:3000)
+#   role: api         label; any key/value, it only has to be the same in the three places marked [L]
+#   http              port name; the Service's targetPort and the probes refer to the container port by it
+#   postgres, backend Secrets created by hand (docs/deployment.md, step 4)
+#   db                host name = the Service from 02-postgres.yaml
+
+# Non-secret settings. Values are always strings. Changing them does not restart running pods:
+# run `kubectl -n restaurant rollout restart deployment backend` afterwards.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: restaurant
+data:
+  ORDER_DISCOUNT: '500'
+  ORDER_STATUS_STEP_SECONDS: '20'
+  JWT_TTL: '28800'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: restaurant
+spec:
+  # Exactly one: the event bus and the order-status timer live in the process memory.
+  replicas: 1
+  # Stop the old pod before starting the new one, so two backends never run at the same time
+  # (the default RollingUpdate starts the new one first).
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      role: api # [L] which pods this Deployment owns
+  template:
+    metadata:
+      labels:
+        role: api # [L] the label every created pod gets
+    spec:
+      # By default Kubernetes adds env variables for every Service in the namespace, including
+      # BACKEND_PORT=tcp://<ip>:3000 for the Service `backend`. The app reads BACKEND_PORT as the
+      # port to listen on and crashes with `listen EACCES ... tcp://...`.
+      enableServiceLinks: false
+      containers:
+        - name: api
+          image: ghcr.io/slaviksurminskiy/restaurant-backend:d587d80
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_DB
+            # $(NAME) is replaced with the variables defined above in this list.
+            - name: DATABASE_URL
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend
+                  key: JWT_SECRET
+          # Until this passes, the pod gets no traffic from the Service.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          # If it fails 3 times in a row (about a minute), the container is restarted.
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 512Mi
+---
+# A stable in-cluster address (virtual IP + DNS name `backend`) in front of the pod, whose own IP
+# changes every time it is recreated. Not reachable from outside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: restaurant
+spec:
+  selector:
+    role: api # [L] sends traffic to pods with this label
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

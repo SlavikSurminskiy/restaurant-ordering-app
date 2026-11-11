@@ -1,0 +1,36 @@
+# Traefik: the cluster's entry point from the internet. Installed with Helm from the project's OCI
+# registry (no `helm repo add` needed):
+#   helm install traefik oci://ghcr.io/traefik/helm/traefik --version 42.3.1 -n traefik --create-namespace -f deploy/helm/traefik-values.yaml
+# The chart creates a Service of type LoadBalancer, and OKE turns it into an OCI load balancer in
+# the restaurant-lb subnet. TLS ends in Traefik; the load balancer only passes TCP through.
+
+service:
+  annotations:
+    # Always Free: one flexible load balancer with exactly 10 Mbps. Another shape or bandwidth is paid.
+    oci.oraclecloud.com/load-balancer-type: lb
+    service.beta.kubernetes.io/oci-load-balancer-shape: flexible
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: '10'
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: '10'
+    # The security list in deploy/terraform/network.tf already lets 80/443 in and the VCN reach the
+    # nodes, so OKE must not add rules of its own (Terraform would see them as drift).
+    service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: None
+
+ports:
+  web:
+    # Plain HTTP answers with a permanent redirect to HTTPS.
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+          # Lowest priority: cert-manager's /.well-known/acme-challenge/ route on port 80 must win,
+          # because Let's Encrypt checks the domain over plain HTTP.
+          priority: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

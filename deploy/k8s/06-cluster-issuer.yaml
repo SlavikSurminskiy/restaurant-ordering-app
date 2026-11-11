@@ -1,0 +1,40 @@
+# Where certificates come from: Let's Encrypt, which checks that we own the domain with an HTTP-01
+# challenge (a request to http://<domain>/.well-known/acme-challenge/<token>).
+#   kubectl apply -f deploy/k8s/06-cluster-issuer.yaml
+#
+# Names in this file and how they are linked:
+#   letsencrypt-staging, letsencrypt-prod
+#                     ClusterIssuer names; the Ingress annotation cert-manager.io/cluster-issuer picks one
+#   traefik           IngressClass created by the Traefik chart; cert-manager makes a temporary
+#                     Ingress of this class to answer the challenge
+#
+# Staging certificates are not trusted by browsers, but its rate limits are high: use it until the
+# setup works, then switch the Ingress to prod (5 certificates per domain per week).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # Secret where cert-manager keeps the ACME account key.
+    privateKeySecretRef:
+      name: letsencrypt-staging-account
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik
