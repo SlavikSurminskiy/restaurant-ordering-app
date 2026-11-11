@@ -1,0 +1,70 @@
+# nginx with the Angular build; it proxies /api to the backend Service.
+#   kubectl apply -f deploy/k8s/05-frontend.yaml
+#
+# Names in this file and how they are linked:
+#   frontend          Deployment name (pods are frontend-<hash>-<suffix>) and Service name; the
+#                     entry point from outside (Traefik) will point to this Service
+#   role: web         label; any key/value, it only has to be the same in the three places marked [L]
+#   http              port name; the Service's targetPort and the probes refer to the container port by it
+#   backend           host name = the Service from 04-backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: restaurant
+spec:
+  # Stateless, so it could run several replicas; one is enough here.
+  replicas: 1
+  selector:
+    matchLabels:
+      role: web # [L] which pods this Deployment owns
+  template:
+    metadata:
+      labels:
+        role: web # [L] the label every created pod gets
+    spec:
+      # No BACKEND_*/DB_* variables for the Services (see 04-backend.yaml); nginx finds the
+      # backend by its DNS name.
+      enableServiceLinks: false
+      containers:
+        - name: nginx
+          image: ghcr.io/slaviksurminskiy/restaurant-frontend:d587d80
+          ports:
+            - name: http
+              containerPort: 8080 # nginx-unprivileged listens on 8080, not 80
+          env:
+            # The image's default, set here to show where /api goes. Filled into the nginx config
+            # on container start.
+            - name: BACKEND_URL
+              value: http://backend:3000
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /index.html
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 128Mi
+---
+# A stable in-cluster address for nginx. Traefik will send internet traffic to it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: restaurant
+spec:
+  selector:
+    role: web # [L] sends traffic to pods with this label
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
