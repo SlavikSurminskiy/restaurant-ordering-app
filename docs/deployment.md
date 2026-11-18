@@ -1,6 +1,6 @@
 # Deployment
 
-Steps 1–5 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) in Oracle Cloud Always Free, created with Terraform, at https://92-5-5-205.sslip.io. Steps 6–8 are still a plan. The goal is a free public deployment that doubles as Kubernetes practice. Free-tier terms change often; check them before changing sizes or shapes.
+Steps 1–5 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) in Oracle Cloud Always Free, created with Terraform, at https://92-5-5-205.sslip.io. Step 6 (Argo CD) is written and is turned on after this branch reaches `main`; steps 7–8 are still a plan. The goal is a free public deployment that doubles as Kubernetes practice. Free-tier terms change often; check them before changing sizes or shapes.
 
 ## Constraints from the current code
 
@@ -21,7 +21,7 @@ Steps 1–5 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) 
 | Google Cloud Run + Neon                  | Containers with SSE (timeouts up to 60 min) | Billing account required; `max-instances=1` because of the in-memory bus.                  |
 | **Oracle Cloud Always Free + OKE**       | Real managed Kubernetes, always on          | ARM (arm64) nodes only; A1 capacity per region can run out.                                |
 
-**Chosen path:** container images → CI to GHCR → OKE created with Terraform → plain manifests applied one by one → HTTPS with Traefik and cert-manager → OpenTelemetry, with Postgres inside the cluster. The main goal is hands-on practice, so there is no managed database and no Kustomize or Helm chart of our own: each file is applied and checked before the next.
+**Chosen path:** container images → CI to GHCR → OKE created with Terraform → plain manifests applied one by one → HTTPS with Traefik and cert-manager → deploys by Argo CD from git → OpenTelemetry, with Postgres inside the cluster. The main goal is hands-on practice, so there is no managed database and no Kustomize or Helm chart of our own: each file is applied and checked before the next.
 
 ## Steps
 
@@ -86,7 +86,7 @@ kubectl -n restaurant create secret generic postgres \
 kubectl -n restaurant create secret generic backend --from-literal=JWT_SECRET="$(openssl rand -hex 32)"
 ```
 
-A new release: change the image tags in `03`–`05`, delete the finished `Job` (its template can't be changed) and apply `03`, then `04` and `05`.
+A new release by hand: change the image tags in `03`–`05`, delete the finished `Job` (its template can't be changed) and apply `03`, then `04` and `05`. With Argo CD ([step 6](#6-gitops-argo-cd)) this happens on its own after every merge to `main`.
 
 Check: `kubectl -n restaurant get pods` shows `pg-server-0`, `backend-…`, `frontend-…` as `Running` and the migrate pod as `Completed`; `kubectl -n restaurant port-forward svc/frontend 8080:80` opens the app on http://localhost:8080.
 
@@ -103,9 +103,28 @@ Order: Traefik → read the IP with `kubectl -n traefik get svc traefik` → cer
 
 Check: `kubectl -n restaurant get certificate` shows `READY True`; `curl -I http://92-5-5-205.sslip.io/` answers `301` to HTTPS; log in, open the menu in two tabs, change a dish and see it update live; the auth cookie is `Secure`.
 
-### 6. GitOps (optional)
+### 6. GitOps: Argo CD
 
-**Argo CD** in the cluster watches `deploy/k8s`; CI updates the image tags (a commit or Argo CD Image Updater). Deploys become a merge, and rollback is a revert. Traefik and cert-manager could move to Terraform `helm_release` or to Argo CD applications at the same time.
+**Argo CD** in the cluster keeps it equal to `deploy/k8s` on `main`; a deploy is a commit, and a rollback is `git revert` of that commit.
+
+1. A merge to `main` → `images.yml` builds the images tagged with the short SHA and runs the migrate smoke test.
+2. Its `deploy` job replaces the tag in the `image:` lines of `deploy/k8s` with `sed` and pushes `build(deploy): images <sha>` to `main` as `github-actions[bot]`. The commit touches only `deploy/`, so `images.yml` does not run again.
+3. Argo CD polls the repository every 3 minutes, sees the new tags and syncs in waves: everything else (wave 0) → the migrate `Job` as a `Sync` hook, recreated on every sync (wave 1) → `backend` and `frontend` (wave 2). A failed migration stops the sync, and the old pods keep running.
+
+| File                               | Purpose                                                                                                                     |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `deploy/helm/argocd-values.yaml`   | Argo CD chart without dex, notifications and the ApplicationSet controller (memory); the install command is at the top      |
+| `deploy/argocd/restaurant.yaml`    | `Application` `restaurant`: repo, `main`, `deploy/k8s` → namespace `restaurant`; automated sync with `prune` and `selfHeal` |
+| `argocd.argoproj.io/*` annotations | in `01` (the namespace is never pruned), `03` (hook, wave 1), `04`/`05` (wave 2)                                            |
+
+- Secrets created by hand and `restaurant-tls` are not in git; Argo CD did not create them, so `prune` leaves them alone.
+- `selfHeal` reverts manual `kubectl` changes to resources from `deploy/k8s`; change the files instead. To pause it, turn off auto-sync in the UI.
+- No Ingress for Argo CD: `kubectl -n argocd port-forward svc/argocd-server 8443:443` → https://localhost:8443, user `admin`, password from `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"` (base64).
+- Traefik and cert-manager stay Helm releases installed by hand; they could become Argo CD applications or Terraform `helm_release` later.
+
+Order: the Argo CD chart → `kubectl apply -f deploy/argocd/restaurant.yaml` (after `deploy/` is on `main`).
+
+Check: `kubectl -n argocd get applications` shows `restaurant` as `Synced` and `Healthy`; after a merge to `main`, the bot commit appears and `kubectl -n restaurant get pods` shows new pods with the new tag.
 
 ### 7. OpenTelemetry
 

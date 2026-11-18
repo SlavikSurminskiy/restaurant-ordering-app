@@ -1,0 +1,21 @@
+# Argo CD: keeps the cluster in sync with deploy/k8s on main (GitOps). Installed with Helm from the
+# project's OCI registry (no `helm repo add` needed):
+#   helm install argocd oci://ghcr.io/argoproj/argo-helm/argo-cd --version 10.18.0 -n argocd --create-namespace -f deploy/helm/argocd-values.yaml
+# What to sync is described in deploy/argocd/restaurant.yaml, applied after the install.
+# No Ingress: the UI is reached with a port-forward (docs/deployment.md, step 6).
+
+# Only the parts this project uses, to save memory on the two 6 GB nodes. Left on: the application
+# controller (compares git with the cluster and syncs), the repo server (clones the repo, renders the
+# manifests), the API/UI server and Redis (their cache).
+
+# Single sign-on through external identity providers; the built-in admin user is enough here.
+dex:
+  enabled: false
+
+# Messages to Slack, e-mail and the like on sync events.
+notifications:
+  enabled: false
+
+# Generates many Applications from a template (per cluster, per folder); there is only one here.
+applicationSet:
+  replicas: 0

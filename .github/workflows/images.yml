@@ -1,7 +1,8 @@
 name: Images
 
 # Builds the backend, frontend and migrate images for arm64 (the Oracle Cloud Ampere A1 nodes) and
-# pushes them to GHCR, tagged with the short commit SHA (plus `main` on the main branch).
+# pushes them to GHCR, tagged with the short commit SHA (plus `main` on the main branch). On main
+# it then commits the new tag into deploy/k8s, which Argo CD deploys.
 on:
   pull_request:
     paths-ignore: ['**.md', 'docs/**', 'deploy/**']
@@ -87,3 +88,33 @@ jobs:
             -e DATABASE_URL=postgresql://app:app@127.0.0.1:5432/app \
             "$REGISTRY/restaurant-migrate:${{ steps.tag.outputs.short-sha }}"
           docker exec postgres psql -U app -d app -c 'SELECT migration_name, finished_at FROM _prisma_migrations'
+
+  # Main only: writes the new tag into the image lines of deploy/k8s and pushes that commit. Argo CD
+  # in the cluster picks it up and rolls the release out (docs/deployment.md, step 6). The commit
+  # touches only deploy/, so it does not start this workflow again (paths-ignore above).
+  deploy:
+    needs: smoke-migrate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The branch's current state, not github.sha: main may have moved on with docs-only commits.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Set image tags
+        run: |
+          sed -i -E "s#(image: $REGISTRY/restaurant-(backend|frontend|migrate)):.*#\1:${SOURCE_SHA::7}#" deploy/k8s/*.yaml
+          git diff
+
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add deploy/k8s
+          # Nothing to do when the tags are already there (a re-run).
+          git diff --cached --quiet && exit 0
+          git commit -m "build(deploy): images ${SOURCE_SHA::7}"
+          git push

@@ -27,6 +27,9 @@ kind: Deployment
 metadata:
   name: backend
   namespace: restaurant
+  annotations:
+    # Argo CD rolls it out after the migrate Job (wave 1, 03-migrate-job.yaml) has completed.
+    argocd.argoproj.io/sync-wave: '2'
 spec:
   # Exactly one: the event bus and the order-status timer live in the process memory.
   replicas: 1
