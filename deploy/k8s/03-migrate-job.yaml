@@ -1,8 +1,9 @@
 # One-off migration run: `prisma migrate deploy` against the database, then the pod exits.
 #   kubectl apply -f deploy/k8s/03-migrate-job.yaml
-# A Job's pod template cannot be changed, so to run it again (a new release, a new image tag):
+# A Job's pod template cannot be changed, so to run it again by hand (a new image tag):
 #   kubectl -n restaurant delete job migrate
 #   kubectl apply -f deploy/k8s/03-migrate-job.yaml
+# Argo CD (deploy/argocd/restaurant.yaml) does the same on every sync: see the annotations below.
 #
 # Names in this file and how they are linked:
 #   migrate           Job name; its pod is migrate-<random suffix>
@@ -13,6 +14,15 @@ kind: Job
 metadata:
   name: migrate
   namespace: restaurant
+  annotations:
+    # For Argo CD this is a hook, not a resource to keep: it is created anew on every sync.
+    argocd.argoproj.io/hook: Sync
+    # The previous run's Job is deleted right before, so the same name can be used again.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    # Waves run in order, each waiting for the previous one to be healthy: Postgres and the rest
+    # (wave 0) → this Job until it is Complete (1) → backend and frontend (2). A failed migration
+    # stops the sync, and the old backend keeps running.
+    argocd.argoproj.io/sync-wave: '1'
 spec:
   # A failed pod is replaced up to 4 times, with growing pauses (10 s, 20 s, 40 s, ...), e.g. while
   # the database is still starting. After that the Job is Failed.

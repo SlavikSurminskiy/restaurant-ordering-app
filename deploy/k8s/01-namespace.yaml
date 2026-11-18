@@ -2,3 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: restaurant
+  annotations:
+    # Argo CD never deletes it, even if this file is removed: that would take the database volume
+    # and the hand-made Secrets with it.
+    argocd.argoproj.io/sync-options: Prune=false

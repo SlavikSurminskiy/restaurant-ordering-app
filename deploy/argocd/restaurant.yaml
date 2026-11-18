@@ -1,0 +1,37 @@
+# What Argo CD keeps in sync: every file in deploy/k8s on the main branch, applied to this cluster.
+# Applied once by hand, after Argo CD is installed (deploy/helm/argocd-values.yaml):
+#   kubectl apply -f deploy/argocd/restaurant.yaml
+#
+# A new release is a commit that changes the image tags in deploy/k8s: the deploy job in
+# .github/workflows/images.yml makes it after each build on main. Argo CD checks the repository
+# every 3 minutes and applies the difference; the order inside one sync is set by the
+# argocd.argoproj.io/* annotations in 03-migrate-job.yaml, 04-backend.yaml and 05-frontend.yaml.
+#
+# Names in this file and how they are linked:
+#   restaurant        Application name, shown in the Argo CD UI and in `kubectl -n argocd get applications`
+#   argocd            namespace of the Argo CD install; Applications must live there
+#   default           AppProject that the chart creates; it allows any repository and namespace
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: restaurant
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # Public repository, so Argo CD needs no credentials to clone it.
+    repoURL: https://github.com/SlavikSurminskiy/restaurant-ordering-app.git
+    targetRevision: main
+    # A plain folder of YAML files (no Kustomize or Helm); subfolders are not read.
+    path: deploy/k8s
+  destination:
+    # The cluster Argo CD itself runs in.
+    server: https://kubernetes.default.svc
+    namespace: restaurant
+  syncPolicy:
+    automated:
+      # A resource removed from git is deleted from the cluster. Resources Argo CD did not create
+      # (the Secrets made by hand, restaurant-tls from cert-manager) are never touched.
+      prune: true
+      # A change made with kubectl (a different tag, a deleted Deployment) is reverted to git.
+      selfHeal: true
