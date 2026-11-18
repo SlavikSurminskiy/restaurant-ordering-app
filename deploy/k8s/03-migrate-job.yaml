@@ -36,7 +36,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: ghcr.io/slaviksurminskiy/restaurant-migrate:d587d80
+          image: ghcr.io/slaviksurminskiy/restaurant-migrate:53bb7c3
           env:
             - name: POSTGRES_USER
               valueFrom:
