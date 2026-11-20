@@ -1,6 +1,6 @@
 # Deployment
 
-Steps 1–5 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) in Oracle Cloud Always Free, created with Terraform, at https://92-5-5-205.sslip.io. Step 6 (Argo CD) is written and is turned on after this branch reaches `main`; steps 7–8 are still a plan. The goal is a free public deployment that doubles as Kubernetes practice. Free-tier terms change often; check them before changing sizes or shapes.
+Steps 1–6 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) in Oracle Cloud Always Free, created with Terraform, at https://92-5-5-205.sslip.io, and Argo CD rolls out every merge to `main`. Steps 7–8 are still a plan. The goal is a free public deployment that doubles as Kubernetes practice. Free-tier terms change often; check them before changing sizes or shapes.
 
 ## Constraints from the current code
 
@@ -137,7 +137,7 @@ Check: `kubectl -n argocd get applications` shows `restaurant` as `Synced` and `
 
 ### 8. Several backend replicas
 
-Replace the in-memory `EventBus` with PostgreSQL `LISTEN/NOTIFY` (no new infrastructure) or Redis pub/sub, and move the order-status timer to a single worker or a database-driven job. Then: `replicas: 2+`, `RollingUpdate`, a `PodDisruptionBudget`, an HPA. See [production-readiness.md](production-readiness.md#real-time-at-scale).
+Replace the in-memory `EventBus` with PostgreSQL `LISTEN/NOTIFY` (no new infrastructure) or Redis pub/sub, and move the order-status timer to a single worker or a database-driven job. Then: `replicas: 2+`, `RollingUpdate`, a `PodDisruptionBudget`, an HPA. See [production-readiness.md](production-readiness.md#real-time-at-scale). The microservices plan ([microservices.md](microservices.md), stage B) solves this with Kafka instead.
 
 ## Open questions
 
