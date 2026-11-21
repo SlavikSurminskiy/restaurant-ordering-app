@@ -1,4 +1,5 @@
-# Production-like stack from the Docker images: Postgres → migrate → backend → frontend.
+# Production-like stack from the Docker images: Postgres → migrate → backend + auth-service →
+# frontend, with Traefik in front routing by path like the Ingress in deploy/k8s/07-ingress.yaml.
 # Separate from the development docker-compose.yml: own project name, volume and ports.
 #   cp .env.prod.example .env.prod   # then set real secrets
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
@@ -54,7 +55,6 @@ services:
     environment:
       DATABASE_URL: *database-url
       JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
-      JWT_TTL: ${JWT_TTL:-28800}
       ORDER_DISCOUNT: ${ORDER_DISCOUNT:-500}
       ORDER_STATUS_STEP_SECONDS: ${ORDER_STATUS_STEP_SECONDS:-20}
     depends_on:
@@ -74,17 +74,74 @@ services:
       retries: 6
       start_period: 10s
 
+  # Signs the JWT; the backend verifies it with the same JWT_SECRET.
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/auth-service/Dockerfile
+    image: restaurant-auth-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *database-url
+      JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
+      JWT_TTL: ${JWT_TTL:-28800}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # The image has no curl; Node's fetch does the same.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3001/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    labels:
+      traefik.enable: 'true'
+      # Same as the Ingress rule: /api/auth and everything under it, not /api/authors.
+      traefik.http.routers.auth.rule: Path(`/api/auth`) || PathPrefix(`/api/auth/`)
+      traefik.http.services.auth.loadbalancer.server.port: '3001'
+
   frontend:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
     image: restaurant-frontend
     restart: unless-stopped
-    ports:
-      - '${FRONTEND_PORT:-8080}:8080'
     depends_on:
       backend:
         condition: service_healthy
+    labels:
+      traefik.enable: 'true'
+      # Traefik tries longer rules first, so this one catches what the auth rule does not.
+      traefik.http.routers.web.rule: PathPrefix(`/`)
+      traefik.http.services.web.loadbalancer.server.port: '8080'
+
+  # The entry point, like Traefik in the cluster. It reads the routes from the labels above
+  # through the Docker API; only containers with traefik.enable=true get one.
+  traefik:
+    image: traefik:v3.7.17
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --entryPoints.web.address=:8080
+    ports:
+      - '${FRONTEND_PORT:-8080}:8080'
+    volumes:
+      # Read-only, but the Docker API still gives full control over the host's containers: fine
+      # on a development machine, not on a shared server.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      frontend:
+        condition: service_started
 
 volumes:
   postgres-data:
