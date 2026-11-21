@@ -148,4 +148,5 @@ Replace the in-memory `EventBus` with PostgreSQL `LISTEN/NOTIFY` (no new infrast
 - **Secrets in git:** Sealed Secrets or SOPS instead of `kubectl create secret` by hand.
 - **Backups:** a `CronJob` with `pg_dump` to Object Storage (free S3-compatible storage), or the CloudNativePG operator instead of the plain `StatefulSet`.
 - **Terraform state:** local now; an OCI Object Storage bucket as a remote backend if more than one machine runs Terraform.
+- **Selective builds and deploys:** every merge rebuilds all images and restarts every pod; building and rolling out only the changed services is planned after the service split ([microservices.md](microservices.md#later-build-and-deploy-only-what-changed)).
 - **Telemetry backend:** Grafana Cloud (nothing to run) or self-hosted LGTM (more practice, more memory).

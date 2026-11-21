@@ -98,6 +98,23 @@ Stage B:
 8. `kitchen-service` takes over the status timer.
 9. Optional: menu projection in `orders-service`.
 
+## Later: build and deploy only what changed
+
+Postponed until every service in this plan is cut out; then the set of images is stable.
+
+**Today** every merge to `main` that touches code builds all images (a static matrix in `images.yml`; the layer cache makes unchanged ones fast, but they are still built and pushed), and the `deploy` job writes the new commit tag into every `image:` line. Argo CD compares only manifest text, not image contents, so it sees every Deployment changed and restarts all pods. Consequences:
+
+- A change in one service restarts the others. The backend runs with `strategy: Recreate`, so each merge gives it a few seconds without a pod: SSE clients reconnect, and service-to-service calls to it fail meanwhile (seen after #27: menu-service got a connect timeout to `backend:3000` during that window).
+- The tag says which commit built the image, not when the service last changed.
+
+**Plan:**
+
+- A first job lists the affected projects with `nx show projects --affected`, with the base from `nrwl/nx-set-shas`: the last **successful** run on `main`, so a failed build is retried by the next merge. The build matrix is made from that list; the `migrate` image follows `libs/database`.
+- The `deploy` job rewrites only the tags of the images it built; Argo CD then restarts only those Deployments.
+- Nx's project graph decides what is affected: a change in `libs/shared/api-types` rebuilds the backend services and the frontend, one in `libs/backend/auth` only the backend services.
+- Alternative: tag images by content (the Nx task hash or the image digest) instead of the commit, so a rebuilt but unchanged image keeps its tag. More robust, but the tag no longer points to a commit.
+
+
 ## Resources
 
 The scheduler places pods by their **requests**, not by real use. Each node (1 OCPU, 6 GB) offers 840m CPU and about 4.3 GiB to pods; on 2026-11-21 the pods requested 740m + 580m CPU and 1.4 + 1.0 GiB memory. **CPU requests are the limit, not memory**: OKE's own pods (flannel, CoreDNS, CSI, agents) take about 300m per node.
