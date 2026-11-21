@@ -9,6 +9,7 @@
 #   frontend, http       Service and port name from 05-frontend.yaml
 #   auth-service         Service from 08-auth-service.yaml
 #   menu-service         Service from 09-menu-service.yaml
+#   realtime-gateway     Service from 10-realtime-gateway.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -38,6 +39,14 @@ spec:
             backend:
               service:
                 name: auth-service
+                port:
+                  name: http
+          # Server-Sent Events: Traefik passes the response on as it comes, without buffering.
+          - path: /api/events
+            pathType: Prefix
+            backend:
+              service:
+                name: realtime-gateway
                 port:
                   name: http
           - path: /api/menu
