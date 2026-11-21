@@ -98,9 +98,9 @@ The exception is a package Nx cannot see in imports. Declare it in the `package.
 
 ### Deploy output
 
-`pnpm nx run backend:prepare-deploy` turns `dist/apps/backend` into a folder that installs outside the monorepo with `pnpm install --prod --frozen-lockfile`. After `build` (which writes `main.js`, `package.json` and a lockfile), it:
+`pnpm nx run backend:prepare-deploy` (and the same target of `auth-service`) turns `dist/apps/backend` into a folder that installs outside the monorepo with `pnpm install --prod --frozen-lockfile`. After `build` (which writes `main.js`, `package.json` and a lockfile), it:
 
-1. Removes `workspace:*` dependencies from `package.json` (`apps/backend/scripts/strip-workspace-deps.mjs`). Webpack bundles the workspace libraries into `main.js` through `paths`, and outside the monorepo pnpm cannot resolve `workspace:*`.
+1. Removes `workspace:*` dependencies from `package.json` (`tools/scripts/strip-workspace-deps.mjs`). Webpack bundles the workspace libraries into `main.js` through `paths`, and outside the monorepo pnpm cannot resolve `workspace:*`.
 2. Runs `pnpm install --lockfile-only` there, which brings the lockfile in line with the edited `package.json` and keeps the resolved versions.
 
 The image installs this output with `pnpm install --prod --frozen-lockfile --no-optional`. pnpm links an optional peer whenever any project in the workspace has it, even as a dev dependency, so the root lockfile ties `prisma` (the CLI with Studio and React) and `typescript` to `@prisma/client`, and the pruned lockfile keeps that link. `--no-optional` leaves them out (about 280 MB of `node_modules`, unused at runtime), together with every other optional dependency and optional peer. Alternatives that were tried: a `readPackage` hook in `.pnpmfile.cjs` is precise but the lockfile records its checksum, so the hook has to ship into the image; `autoInstallPeers: false` needs `--fix-lockfile`; `overrides` with `"-"` does not apply to peers. If the backend ever needs a package that ships native binaries as `optionalDependencies` (`sharp`, `bcrypt` prebuilds and the like), revisit `--no-optional`.

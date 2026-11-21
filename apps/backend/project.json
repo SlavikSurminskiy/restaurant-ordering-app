@@ -26,7 +26,7 @@
       "options": {
         "parallel": false,
         "commands": [
-          "node apps/backend/scripts/strip-workspace-deps.mjs",
+          "node tools/scripts/strip-workspace-deps.mjs dist/apps/backend",
           "pnpm install --lockfile-only --dir dist/apps/backend"
         ]
       }

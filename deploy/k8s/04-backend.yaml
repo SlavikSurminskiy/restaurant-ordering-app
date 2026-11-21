@@ -20,7 +20,6 @@ metadata:
 data:
   ORDER_DISCOUNT: '500'
   ORDER_STATUS_STEP_SECONDS: '20'
-  JWT_TTL: '28800'
 ---
 apiVersion: apps/v1
 kind: Deployment

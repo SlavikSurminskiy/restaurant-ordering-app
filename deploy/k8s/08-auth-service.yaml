@@ -1,0 +1,115 @@
+# Auth service (login, logout, me): settings, a pod and an in-cluster address for it.
+#   kubectl apply -f deploy/k8s/08-auth-service.yaml
+#
+# Names in this file and how they are linked:
+#   auth-service-config  ConfigMap name; the Deployment loads all its keys as env variables
+#   auth-service         Deployment name and Service name; the Ingress (07-ingress.yaml) sends
+#                        /api/auth to this Service
+#   role: auth           label; it only has to be the same in the three places marked [L]
+#   http                 port name; the Service's targetPort and the probes refer to it
+#   postgres, backend    Secrets created by hand (docs/deployment.md, step 4); JWT_SECRET is the
+#                        one the backend verifies tokens with, so both read the same Secret
+#   db                   host name = the Service from 02-postgres.yaml
+
+# Non-secret settings. Changing them does not restart running pods:
+# run `kubectl -n restaurant rollout restart deployment auth-service` afterwards.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+  namespace: restaurant
+data:
+  # Lifetime of the JWT and of its cookie; only this service signs tokens.
+  JWT_TTL: '28800'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: restaurant
+  annotations:
+    # After the migrate Job (wave 1), together with the backend and the frontend.
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  # Stateless: the JWT carries the session and the data is in Postgres, so it could run several
+  # replicas. One is enough for now: CPU on the two nodes is tight (docs/microservices.md, resources).
+  replicas: 1
+  # The default RollingUpdate. With one replica it starts the new pod first (maxSurge rounds up
+  # to 1, maxUnavailable down to 0) and stops the old one only after the new one is ready, so a
+  # rollout has no downtime. Only a node failure leaves login down until the pod is rescheduled.
+  selector:
+    matchLabels:
+      role: auth # [L] which pods this Deployment owns
+  template:
+    metadata:
+      labels:
+        role: auth # [L] the label every created pod gets
+    spec:
+      # Without it Kubernetes adds AUTH_SERVICE_PORT=tcp://<ip>:3001 for the Service
+      # `auth-service`, the same variable the app reads as its port (see 04-backend.yaml).
+      enableServiceLinks: false
+      containers:
+        - name: auth
+          image: ghcr.io/slaviksurminskiy/restaurant-auth-service:b1f9893
+          ports:
+            - name: http
+              containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: auth-service-config
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_DB
+            - name: DATABASE_URL
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            failureThreshold: 3
+          # The backend uses about 180 MiB with SSE and the timer; this service does less.
+          # CPU is the scarce resource on the two nodes, so the request is small.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: restaurant
+spec:
+  selector:
+    role: auth # [L] sends traffic to the ready pods with this label
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http
