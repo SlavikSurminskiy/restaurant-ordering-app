@@ -5,6 +5,7 @@ import { JwtAuthModule } from '@restaurant/backend-auth';
 import { DatabaseModule } from '@restaurant/database';
 
 import { AuthModule } from './auth/auth.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AuthModule } from './auth/auth.module';
     DatabaseModule,
     JwtAuthModule,
     AuthModule,
+    HealthModule,
   ],
 })
 export class AppModule {}
