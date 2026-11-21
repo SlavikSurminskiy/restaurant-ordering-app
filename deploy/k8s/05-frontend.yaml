@@ -13,7 +13,7 @@ metadata:
   name: frontend
   namespace: restaurant
   annotations:
-    # Same wave as the backend (04-backend.yaml): after the migrations.
+    # After the migrations (wave 1), with the other services.
     argocd.argoproj.io/sync-wave: '2'
 spec:
   # Stateless, so it could run several replicas; one is enough here.

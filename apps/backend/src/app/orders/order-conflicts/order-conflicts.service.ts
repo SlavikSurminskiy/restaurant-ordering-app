@@ -2,22 +2,17 @@ import { Injectable } from '@nestjs/common';
 
 import {
   CreateOrderItemRequest,
-  Dish,
   OrderConflict,
   OrderConflictReason,
+  PricedDish,
 } from '@restaurant/shared-api-types';
-
-export type OrderedDish = Pick<
-  Dish,
-  'id' | 'name' | 'price' | 'isOpenPrice' | 'available'
->;
 
 @Injectable()
 export class OrderConflictsService {
   /** Why each item can't be ordered as the customer saw it; empty when the order can go ahead. */
   find(
     items: readonly CreateOrderItemRequest[],
-    dishes: readonly OrderedDish[],
+    dishes: readonly PricedDish[],
   ): OrderConflict[] {
     const byId = new Map(dishes.map((dish) => [dish.id, dish]));
 

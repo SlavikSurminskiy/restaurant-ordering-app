@@ -28,7 +28,7 @@ metadata:
   name: auth-service
   namespace: restaurant
   annotations:
-    # After the migrate Job (wave 1), together with the backend and the frontend.
+    # After the migrate Job (wave 1), with the frontend and menu-service.
     argocd.argoproj.io/sync-wave: '2'
 spec:
   # Stateless: the JWT carries the session and the data is in Postgres, so it could run several

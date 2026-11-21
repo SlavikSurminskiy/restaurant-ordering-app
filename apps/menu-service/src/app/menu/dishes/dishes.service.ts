@@ -16,14 +16,14 @@ import {
   UpdateDishRequest,
 } from '@restaurant/shared-api-types';
 
-import { EventBus } from '../../events/event-bus/event-bus';
+import { EventPublisher } from '../../events/event-publisher';
 import { DISH_SELECT } from '../menu.constants';
 
 @Injectable()
 export class DishesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly events: EventBus,
+    private readonly events: EventPublisher,
   ) {}
 
   async create(request: CreateDishRequest): Promise<Dish> {
@@ -32,7 +32,7 @@ export class DishesService {
       select: DISH_SELECT,
     });
 
-    this.events.publish({ type: MenuEventType.DishUpserted, dish });
+    await this.events.publish({ type: MenuEventType.DishUpserted, dish });
 
     return dish;
   }
@@ -62,7 +62,7 @@ export class DishesService {
       throw toHttpError(error);
     }
 
-    this.events.publish({ type: MenuEventType.DishUpserted, dish });
+    await this.events.publish({ type: MenuEventType.DishUpserted, dish });
 
     return dish;
   }
@@ -74,7 +74,7 @@ export class DishesService {
       throw toHttpError(error);
     }
 
-    this.events.publish({ type: MenuEventType.DishDeleted, dishId: id });
+    await this.events.publish({ type: MenuEventType.DishDeleted, dishId: id });
   }
 }
 

@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -8,13 +12,15 @@ import { Prisma, PrismaErrorCode, PrismaService } from '@restaurant/database';
 import {
   OrderConflictReason,
   OrderEventType,
+  OrderPricingResponse,
   OrderStatus,
+  PricedDish,
   UserRole,
 } from '@restaurant/shared-api-types';
 
-import { DiscountService } from '../discount/discount.service';
 import { EventBus } from '../events/event-bus/event-bus';
 
+import { MenuClient } from './menu-client/menu-client.service';
 import { ORDER_INCLUDE, OrderRecord } from './orders.constants';
 import { toOrder } from './orders.mapper';
 import { OrdersService } from './orders.service';
@@ -31,7 +37,7 @@ describe(OrdersService.name, () => {
         items: [{ dishId: 'd-caesar', quantity: 2, unitPrice: 1250 }],
       });
 
-      expect(spies.tx.order.create).toHaveBeenCalledWith({
+      expect(spies.prismaMock.order.create).toHaveBeenCalledWith({
         data: {
           userId: 'u-customer',
           idempotencyKey: 'key-1',
@@ -50,6 +56,28 @@ describe(OrdersService.name, () => {
           },
         },
         include: ORDER_INCLUDE,
+      });
+    });
+
+    it('should ask the menu about the ordered dishes', async () => {
+      const spies = Arrange.createSpies();
+      spies.menuClientMock.getPricing.mockResolvedValue(
+        Arrange.createPricing([
+          Arrange.createDish(),
+          { ...Arrange.createDish(), id: 'd-soup', price: 800 },
+        ]),
+      );
+      const service = await Arrange.setup(spies);
+
+      await service.create(Arrange.createCustomer(), 'key-1', {
+        items: [
+          { dishId: 'd-caesar', quantity: 2, unitPrice: 1250 },
+          { dishId: 'd-soup', quantity: 1, unitPrice: 800 },
+        ],
+      });
+
+      expect(spies.menuClientMock.getPricing).toHaveBeenCalledWith({
+        dishIds: ['d-caesar', 'd-soup'],
       });
     });
 
@@ -80,15 +108,15 @@ describe(OrdersService.name, () => {
       });
 
       expect(order).toEqual(toOrder(Arrange.createRecord()));
-      expect(spies.prismaMock.$transaction).not.toHaveBeenCalled();
+      expect(spies.menuClientMock.getPricing).not.toHaveBeenCalled();
       expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
     });
 
     it('should answer 409 with the conflicts and order nothing', async () => {
       const spies = Arrange.createSpies();
-      spies.tx.dish.findMany.mockResolvedValue([
-        { ...Arrange.createDish(), price: 1490 },
-      ]);
+      spies.menuClientMock.getPricing.mockResolvedValue(
+        Arrange.createPricing([{ ...Arrange.createDish(), price: 1490 }]),
+      );
       const service = await Arrange.setup(spies);
 
       const error = await service
@@ -107,7 +135,23 @@ describe(OrdersService.name, () => {
           },
         ],
       });
-      expect(spies.tx.order.create).not.toHaveBeenCalled();
+      expect(spies.prismaMock.order.create).not.toHaveBeenCalled();
+      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+    });
+
+    it('should order nothing when the menu is unavailable', async () => {
+      const spies = Arrange.createSpies();
+      spies.menuClientMock.getPricing.mockRejectedValue(
+        new ServiceUnavailableException(),
+      );
+      const service = await Arrange.setup(spies);
+
+      await expect(
+        service.create(Arrange.createCustomer(), 'key-1', {
+          items: [{ dishId: 'd-caesar', quantity: 1, unitPrice: 1250 }],
+        }),
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+      expect(spies.prismaMock.order.create).not.toHaveBeenCalled();
       expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
     });
 
@@ -116,7 +160,7 @@ describe(OrdersService.name, () => {
       spies.prismaMock.order.findUnique
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(Arrange.createRecord());
-      spies.tx.order.create.mockRejectedValue(
+      spies.prismaMock.order.create.mockRejectedValue(
         Arrange.createPrismaError(PrismaErrorCode.UniqueConstraintViolation),
       );
       const service = await Arrange.setup(spies);
@@ -273,15 +317,11 @@ describe(OrdersService.name, () => {
 });
 
 interface Spies {
-  tx: {
-    dish: { findMany: Mock };
-    order: { create: Mock };
-  };
   prismaMock: {
-    $transaction: Mock;
-    order: { findUnique: Mock; findMany: Mock; update: Mock };
+    order: { create: Mock; findUnique: Mock; findMany: Mock; update: Mock };
   };
   eventBusMock: { publish: Mock };
+  menuClientMock: { getPricing: Mock };
 }
 
 const Arrange = {
@@ -291,7 +331,7 @@ const Arrange = {
         OrdersService,
         { provide: PrismaService, useValue: spies.prismaMock },
         { provide: EventBus, useValue: spies.eventBusMock },
-        { provide: DiscountService, useValue: { discount: 500 } },
+        { provide: MenuClient, useValue: spies.menuClientMock },
         OrderStatusService,
         OrderConflictsService,
       ],
@@ -301,30 +341,33 @@ const Arrange = {
   },
 
   createSpies(): Spies {
-    const tx = {
-      dish: { findMany: vi.fn().mockResolvedValue([Arrange.createDish()]) },
-      order: { create: vi.fn().mockResolvedValue(Arrange.createRecord()) },
-    };
-
     return {
-      tx,
       prismaMock: {
-        $transaction: vi.fn((run: (client: typeof tx) => unknown) => run(tx)),
         order: {
+          create: vi.fn().mockResolvedValue(Arrange.createRecord()),
           findUnique: vi.fn().mockResolvedValue(null),
           findMany: vi.fn().mockResolvedValue([]),
           update: vi.fn().mockResolvedValue(Arrange.createRecord()),
         },
       },
       eventBusMock: { publish: vi.fn() },
+      menuClientMock: {
+        getPricing: vi
+          .fn()
+          .mockResolvedValue(Arrange.createPricing([Arrange.createDish()])),
+      },
     };
+  },
+
+  createPricing(dishes: PricedDish[]): OrderPricingResponse {
+    return { dishes, discount: 500 };
   },
 
   createCustomer(): RequestUser {
     return { id: 'u-customer', role: UserRole.Customer };
   },
 
-  createDish() {
+  createDish(): PricedDish {
     return {
       id: 'd-caesar',
       name: 'Chicken Caesar',

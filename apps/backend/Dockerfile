@@ -14,6 +14,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/auth-service/package.json apps/auth-service/
 COPY apps/backend/package.json apps/backend/
 COPY apps/frontend/package.json apps/frontend/
+COPY apps/menu-service/package.json apps/menu-service/
 COPY libs/backend/auth/package.json libs/backend/auth/
 COPY libs/database/package.json libs/database/
 COPY libs/shared/api-types/package.json libs/shared/api-types/

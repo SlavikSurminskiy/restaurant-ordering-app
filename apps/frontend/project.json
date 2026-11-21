@@ -61,7 +61,11 @@
           "buildTarget": "frontend:build:development"
         }
       },
-      "dependsOn": ["backend:serve", "auth-service:serve"],
+      "dependsOn": [
+        "backend:serve",
+        "auth-service:serve",
+        "menu-service:serve"
+      ],
       "options": {
         "proxyConfig": "apps/frontend/proxy.conf.mjs",
         "port": 4200

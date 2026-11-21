@@ -1,0 +1,112 @@
+# Menu service (menu, categories, dishes, discount): settings, a pod and an in-cluster address.
+#   kubectl apply -f deploy/k8s/09-menu-service.yaml
+#
+# Names in this file and how they are linked:
+#   menu-service-config  ConfigMap name; the Deployment loads all its keys as env variables
+#   menu-service         Deployment name and Service name; the Ingress (07-ingress.yaml) sends
+#                        /api/menu and /api/discount here, the backend calls /internal/order-pricing
+#   role: menu           label; it only has to be the same in the three places marked [L]
+#   http                 port name; the Service's targetPort and the probes refer to it
+#   postgres, backend    Secrets created by hand (docs/deployment.md, step 4); JWT_SECRET verifies
+#                        the admin's cookie on menu changes
+#   db, backend          host names = the Services from 02-postgres.yaml and 04-backend.yaml
+
+# Non-secret settings. Changing them does not restart running pods:
+# run `kubectl -n restaurant rollout restart deployment menu-service` afterwards.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: menu-service-config
+  namespace: restaurant
+data:
+  ORDER_DISCOUNT: '500'
+  # Where menu changes go as events; the backend streams them to browsers over SSE.
+  EVENTS_URL: http://backend:3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: menu-service
+  namespace: restaurant
+  annotations:
+    # After the migrate Job (wave 1), with the frontend and auth-service.
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  # Stateless like auth-service; one replica while CPU on the nodes is tight. The default
+  # RollingUpdate starts the new pod before the old one stops.
+  replicas: 1
+  selector:
+    matchLabels:
+      role: menu # [L] which pods this Deployment owns
+  template:
+    metadata:
+      labels:
+        role: menu # [L] the label every created pod gets
+    spec:
+      # Without it Kubernetes adds MENU_SERVICE_PORT=tcp://<ip>:3002 for the Service
+      # `menu-service`, the same variable the app reads as its port (see 04-backend.yaml).
+      enableServiceLinks: false
+      containers:
+        - name: menu
+          image: ghcr.io/slaviksurminskiy/restaurant-menu-service:36a6270
+          ports:
+            - name: http
+              containerPort: 3002
+          envFrom:
+            - configMapRef:
+                name: menu-service-config
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_DB
+            - name: DATABASE_URL
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            failureThreshold: 3
+          # Same as auth-service; CPU is the scarce resource (docs/microservices.md, resources).
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: menu-service
+  namespace: restaurant
+spec:
+  selector:
+    role: menu # [L] sends traffic to the ready pods with this label
+  ports:
+    - name: http
+      port: 3002
+      targetPort: http

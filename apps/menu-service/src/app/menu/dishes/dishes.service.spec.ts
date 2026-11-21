@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import { Prisma, PrismaErrorCode, PrismaService } from '@restaurant/database';
 import { Dish, MenuEventType } from '@restaurant/shared-api-types';
 
-import { EventBus } from '../../events/event-bus/event-bus';
+import { EventPublisher } from '../../events/event-publisher';
 import { DISH_SELECT } from '../menu.constants';
 
 import { DishesService } from './dishes.service';
@@ -37,7 +37,7 @@ describe(DishesService.name, () => {
 
       await service.create(request);
 
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: MenuEventType.DishUpserted,
         dish: { id, ...request },
       });
@@ -69,7 +69,7 @@ describe(DishesService.name, () => {
 
       await service.update(dish.id, { available: false });
 
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: MenuEventType.DishUpserted,
         dish,
       });
@@ -96,7 +96,7 @@ describe(DishesService.name, () => {
       await expect(
         service.update(Arrange.createDish().id, { available: false }),
       ).rejects.toBeInstanceOf(NotFoundException);
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
 
     it.each([[{ isOpenPrice: true }], [{ price: null }]])(
@@ -144,7 +144,7 @@ describe(DishesService.name, () => {
 
       await service.delete(id);
 
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: MenuEventType.DishDeleted,
         dishId: id,
       });
@@ -160,7 +160,7 @@ describe(DishesService.name, () => {
       await expect(
         service.delete(Arrange.createDish().id),
       ).rejects.toBeInstanceOf(NotFoundException);
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
 
     it('should pass other errors through', async () => {
@@ -178,7 +178,7 @@ interface Spies {
   prismaMock: {
     dish: { create: Mock; findUnique: Mock; update: Mock; delete: Mock };
   };
-  eventBusMock: { publish: Mock };
+  eventPublisherMock: { publish: Mock };
 }
 
 const Arrange = {
@@ -187,7 +187,7 @@ const Arrange = {
       providers: [
         DishesService,
         { provide: PrismaService, useValue: spies.prismaMock },
-        { provide: EventBus, useValue: spies.eventBusMock },
+        { provide: EventPublisher, useValue: spies.eventPublisherMock },
       ],
     }).compile();
 
@@ -206,7 +206,7 @@ const Arrange = {
           delete: vi.fn().mockResolvedValue({}),
         },
       },
-      eventBusMock: { publish: vi.fn() },
+      eventPublisherMock: { publish: vi.fn().mockResolvedValue(undefined) },
     };
   },
 

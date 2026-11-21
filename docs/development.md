@@ -28,6 +28,7 @@ All images build from the repository root:
 ```bash
 docker build -f apps/backend/Dockerfile -t restaurant-backend .
 docker build -f apps/auth-service/Dockerfile -t restaurant-auth-service .
+docker build -f apps/menu-service/Dockerfile -t restaurant-menu-service .
 docker build -f apps/frontend/Dockerfile -t restaurant-frontend .
 docker build -f libs/database/Dockerfile -t restaurant-migrate .
 ```
@@ -39,7 +40,7 @@ docker build -f libs/database/Dockerfile -t restaurant-migrate .
 
 ### Production-like stack
 
-`docker-compose.prod.yml` builds the images and runs Postgres → migrate → backend + auth-service → frontend on http://localhost:8080. Traefik is the entry point, as in the cluster: it sends `/api/auth` to auth-service and everything else to nginx, reading the routes from container labels through the Docker socket. It is a separate compose project (`restaurant-prod`) with its own volume, so it does not touch the development database:
+`docker-compose.prod.yml` builds the images and runs Postgres → migrate → backend, auth-service and menu-service → frontend on http://localhost:8080. Traefik is the entry point, as in the cluster: it sends `/api/auth` to auth-service, `/api/menu` and `/api/discount` to menu-service and everything else to nginx, reading the routes from container labels through the Docker socket. It is a separate compose project (`restaurant-prod`) with its own volume, so it does not touch the development database:
 
 ```bash
 cp .env.prod.example .env.prod      # git-ignored; set POSTGRES_PASSWORD and a 32+ character JWT_SECRET
@@ -48,7 +49,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod down    # add -v 
 ```
 
 - Always pass `--env-file .env.prod`: without it Compose reads the development `.env`, whose `JWT_SECRET` is too short for `NODE_ENV=production`.
-- The backend and auth-service start only after `migrate` exits with 0, the frontend only after the backend's `/api/health` answers, and Traefik after auth-service is healthy.
+- The backend and the services start only after `migrate` exits with 0, the frontend only after the backend's `/api/health` answers, and Traefik after auth-service and menu-service are healthy.
 - `POSTGRES_*` initialise the volume on its first start only. Changing `POSTGRES_PASSWORD` later does not change the database password, so `migrate` fails with `P1000` and the backend does not start.
 - The database starts empty. To log in locally, seed it from the host through the port bound to `127.0.0.1` (demo users, local use only):
 
@@ -66,7 +67,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod down    # add -v 
 
 | Variable                    | Default | Meaning                                                    |
 | --------------------------- | ------- | ---------------------------------------------------------- |
-| `ORDER_DISCOUNT`            | `500`   | Fixed discount on every order, in cents                    |
+| `ORDER_DISCOUNT`            | `500`   | Fixed discount on every order, in cents (menu-service)     |
 | `ORDER_STATUS_STEP_SECONDS` | `20`    | How long an order stays in a status before the timer moves |
 | `JWT_TTL`                   | `28800` | Lifetime of the login token and cookie, in seconds (8 h)   |
 

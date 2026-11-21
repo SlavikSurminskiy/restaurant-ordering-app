@@ -1,0 +1,63 @@
+{
+  "name": "menu-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/menu-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:app"],
+  "targets": {
+    "prepare-deploy": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "executor": "nx:run-commands",
+      "inputs": [
+        "production",
+        "^production",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/pnpm-lock.yaml",
+        "{workspaceRoot}/pnpm-workspace.yaml",
+        {
+          "runtime": "pnpm --version"
+        }
+      ],
+      "outputs": [
+        "{workspaceRoot}/dist/apps/menu-service/package.json",
+        "{workspaceRoot}/dist/apps/menu-service/pnpm-lock.yaml"
+      ],
+      "options": {
+        "parallel": false,
+        "commands": [
+          "node tools/scripts/strip-workspace-deps.mjs dist/apps/menu-service",
+          "pnpm install --lockfile-only --dir dist/apps/menu-service"
+        ]
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build", "database:prisma-seed"],
+      "readyWhen": {
+        "signal": true
+      },
+      "options": {
+        "buildTarget": "menu-service:build",
+        "runBuildTargetDependencies": false,
+        "port": 9231
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "menu-service:build:development"
+        },
+        "production": {
+          "buildTarget": "menu-service:build:production"
+        }
+      }
+    },
+    "build": {
+      "dependsOn": ["^build", "^prisma-generate"]
+    },
+    "test": {
+      "dependsOn": ["^prisma-generate"]
+    }
+  }
+}

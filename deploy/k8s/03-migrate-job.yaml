@@ -20,8 +20,8 @@ metadata:
     # The previous run's Job is deleted right before, so the same name can be used again.
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
     # Waves run in order, each waiting for the previous one to be healthy: Postgres and the rest
-    # (wave 0) → this Job until it is Complete (1) → backend and frontend (2). A failed migration
-    # stops the sync, and the old backend keeps running.
+    # (wave 0) → this Job until it is Complete (1) → frontend and services (2) → Ingress (3) →
+    # backend (4). A failed migration stops the sync, and the old pods keep running.
     argocd.argoproj.io/sync-wave: '1'
 spec:
   # A failed pod is replaced up to 4 times, with growing pauses (10 s, 20 s, 40 s, ...), e.g. while

@@ -7,6 +7,7 @@ apps/
   frontend/      Angular: standalone, signals, zoneless, OnPush, Material + CDK, NgRx SignalStore
   backend/       NestJS: REST, @Sse(), Guards, EventBus (in-memory, RxJS)
   auth-service/  NestJS: login, logout, me; signs the JWT cookie
+  menu-service/  NestJS: menu, categories, dishes, discount; sends menu events to the backend
 libs/
   backend/
     auth/        JwtAuthModule, guards, decorators: JWT verification for every backend service
@@ -19,9 +20,12 @@ docker-compose.yml   PostgreSQL
 ```
 apps/frontend ──REST + SSE──► apps/backend
 apps/frontend ──/api/auth────► apps/auth-service
-apps/backend, apps/auth-service ──► libs/backend/auth
+apps/frontend ──/api/menu, /api/discount──► apps/menu-service
+apps/backend  ──POST /internal/order-pricing──► apps/menu-service
+apps/menu-service ──POST /internal/events──► apps/backend (EventBus → SSE)
+apps/backend, apps/auth-service, apps/menu-service ──► libs/backend/auth
 apps/frontend ──► libs/shared/api-types ◄── apps/backend
-apps/backend, apps/auth-service ──► libs/database ──Prisma Client──► PostgreSQL
+apps/backend, apps/auth-service, apps/menu-service ──► libs/database ──Prisma Client──► PostgreSQL
 ```
 
 | Project            | Directory               | Import path                    |
@@ -29,11 +33,12 @@ apps/backend, apps/auth-service ──► libs/database ──Prisma Client─�
 | `frontend`         | `apps/frontend`         | —                              |
 | `backend`          | `apps/backend`          | —                              |
 | `auth-service`     | `apps/auth-service`     | —                              |
+| `menu-service`     | `apps/menu-service`     | —                              |
 | `backend-auth`     | `libs/backend/auth`     | `@restaurant/backend-auth`     |
 | `shared-api-types` | `libs/shared/api-types` | `@restaurant/shared-api-types` |
 | `database`         | `libs/database`         | `@restaurant/database`         |
 
-`pnpm start` runs `nx serve frontend`. That task first starts `backend:serve` and `auth-service:serve`; each builds its app (generating the Prisma Client) and runs `database:prisma-seed`. The seed depends on `prisma-migrate-deploy`, which depends on `postgres-up` (`docker compose up -d --wait`). So one command starts PostgreSQL, applies migrations, seeds the database and only then starts the servers. Every database target that needs a running database (`prisma-migrate`, `prisma-migrate-deploy`, `prisma-reset`, `prisma-studio`) also depends on `postgres-up`.
+`pnpm start` runs `nx serve frontend`. That task first starts `backend:serve`, `auth-service:serve` and `menu-service:serve`; each builds its app (generating the Prisma Client) and runs `database:prisma-seed`. The seed depends on `prisma-migrate-deploy`, which depends on `postgres-up` (`docker compose up -d --wait`). So one command starts PostgreSQL, applies migrations, seeds the database and only then starts the servers. Every database target that needs a running database (`prisma-migrate`, `prisma-migrate-deploy`, `prisma-reset`, `prisma-studio`) also depends on `postgres-up`.
 
 ## Module boundaries
 
@@ -57,7 +62,7 @@ The frontend cannot import `@restaurant/database`: lint fails if it does. Prisma
 - Event payloads are the `ServerEvent` union in `libs/shared/api-types/src/lib/events.ts`, discriminated by `type`; the type names live in the `MenuEventType` enum (`menu.category.upserted`, `menu.dish.deleted`, …), so code never spells them as strings. Each is sent as the `data` of a default `message` event, so the client needs one `onmessage` handler. `*.upserted` events carry the full entity, not a diff.
 - Every 20 s the stream sends an SSE comment (`: heartbeat`), which `EventSource` ignores. It keeps idle connections from being dropped by proxies; the Angular dev proxy passes the stream through without buffering.
 - On shutdown `EventBus` completes, which ends open streams, and the backend is created with `forceCloseConnections`, so `app.close()` doesn't wait for keep-alive sockets of connected clients.
-- `menu.*` events are published by the admin menu endpoints (`apps/backend/src/app/menu/categories/`, `dishes/`) and go to every client. `order.*` events are published by `apps/backend/src/app/orders/` and go only to the order's owner and to admins. `EventsService` does this filtering with a `switch` over every event type, so a new type does not compile until it is handled; the stream reads the auth cookie once on connect, which is why clients reconnect after login and logout.
+- `menu.*` events are published by the admin menu endpoints in menu-service (`apps/menu-service/src/app/menu/categories/`, `dishes/`) through `EventPublisher`: an awaited `POST /internal/events` to the backend, which puts them on its `EventBus`; they go to every client. Awaiting it keeps the order rule above across the two processes. A failed send is logged, not thrown: the change is committed, and a client that missed it reloads the snapshot when its stream reconnects. `order.*` events are published by `apps/backend/src/app/orders/` and go only to the order's owner and to admins. `EventsService` does this filtering with a `switch` over every event type, so a new type does not compile until it is handled; the stream reads the auth cookie once on connect, which is why clients reconnect after login and logout.
 
 ## Environment variables
 
@@ -98,7 +103,7 @@ The exception is a package Nx cannot see in imports. Declare it in the `package.
 
 ### Deploy output
 
-`pnpm nx run backend:prepare-deploy` (and the same target of `auth-service`) turns `dist/apps/backend` into a folder that installs outside the monorepo with `pnpm install --prod --frozen-lockfile`. After `build` (which writes `main.js`, `package.json` and a lockfile), it:
+`pnpm nx run backend:prepare-deploy` (and the same target of `auth-service` and `menu-service`) turns `dist/apps/backend` into a folder that installs outside the monorepo with `pnpm install --prod --frozen-lockfile`. After `build` (which writes `main.js`, `package.json` and a lockfile), it:
 
 1. Removes `workspace:*` dependencies from `package.json` (`tools/scripts/strip-workspace-deps.mjs`). Webpack bundles the workspace libraries into `main.js` through `paths`, and outside the monorepo pnpm cannot resolve `workspace:*`.
 2. Runs `pnpm install --lockfile-only` there, which brings the lockfile in line with the edited `package.json` and keeps the resolved versions.
