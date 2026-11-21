@@ -2,12 +2,12 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
-  cacheDir: '../../node_modules/.vite/apps/backend',
+  cacheDir: '../../node_modules/.vite/apps/orders-service',
   resolve: {
     tsconfigPaths: true,
   },
   test: {
-    name: 'backend',
+    name: 'orders-service',
     watch: false,
     globals: true,
     environment: 'node',
@@ -15,7 +15,7 @@ export default defineConfig(() => ({
     passWithNoTests: true,
     reporters: ['default'],
     coverage: {
-      reportsDirectory: '../../coverage/apps/backend',
+      reportsDirectory: '../../coverage/apps/orders-service',
       provider: 'v8' as const,
     },
   },

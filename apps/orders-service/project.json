@@ -1,7 +1,7 @@
 {
-  "name": "backend",
+  "name": "orders-service",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/backend/src",
+  "sourceRoot": "apps/orders-service/src",
   "projectType": "application",
   "tags": ["scope:backend", "type:app"],
   "targets": {
@@ -20,14 +20,14 @@
         }
       ],
       "outputs": [
-        "{workspaceRoot}/dist/apps/backend/package.json",
-        "{workspaceRoot}/dist/apps/backend/pnpm-lock.yaml"
+        "{workspaceRoot}/dist/apps/orders-service/package.json",
+        "{workspaceRoot}/dist/apps/orders-service/pnpm-lock.yaml"
       ],
       "options": {
         "parallel": false,
         "commands": [
-          "node tools/scripts/strip-workspace-deps.mjs dist/apps/backend",
-          "pnpm install --lockfile-only --dir dist/apps/backend"
+          "node tools/scripts/strip-workspace-deps.mjs dist/apps/orders-service",
+          "pnpm install --lockfile-only --dir dist/apps/orders-service"
         ]
       }
     },
@@ -40,15 +40,15 @@
         "signal": true
       },
       "options": {
-        "buildTarget": "backend:build",
+        "buildTarget": "orders-service:build",
         "runBuildTargetDependencies": false
       },
       "configurations": {
         "development": {
-          "buildTarget": "backend:build:development"
+          "buildTarget": "orders-service:build:development"
         },
         "production": {
-          "buildTarget": "backend:build:production"
+          "buildTarget": "orders-service:build:production"
         }
       }
     },

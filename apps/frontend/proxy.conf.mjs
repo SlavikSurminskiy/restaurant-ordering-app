@@ -16,8 +16,8 @@ export default {
     target: `http://localhost:${process.env.MENU_SERVICE_PORT ?? 3002}`,
     secure: false,
   },
-  '/api': {
-    target: `http://localhost:${process.env.BACKEND_PORT ?? 3000}`,
+  '/api/orders': {
+    target: `http://localhost:${process.env.ORDERS_SERVICE_PORT ?? 3000}`,
     secure: false,
   },
 };

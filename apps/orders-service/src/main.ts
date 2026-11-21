@@ -19,7 +19,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.use(cookieParser());
 
-  const port = app.get(ConfigService).get<number>('BACKEND_PORT', 3000);
+  const port = app.get(ConfigService).get<number>('ORDERS_SERVICE_PORT', 3000);
   await app.listen(port);
   // Set when Nx waits for this server to be ready
   if (process.env.NX_READY_SIGNAL_SOCKET) {

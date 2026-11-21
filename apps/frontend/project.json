@@ -62,7 +62,7 @@
         }
       },
       "dependsOn": [
-        "backend:serve",
+        "orders-service:serve",
         "auth-service:serve",
         "menu-service:serve",
         "realtime-gateway:serve"

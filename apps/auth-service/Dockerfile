@@ -12,7 +12,7 @@ RUN corepack enable
 # Manifests first: this layer is rebuilt only when dependencies change, not on every code change.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/auth-service/package.json apps/auth-service/
-COPY apps/backend/package.json apps/backend/
+COPY apps/orders-service/package.json apps/orders-service/
 COPY apps/frontend/package.json apps/frontend/
 COPY apps/menu-service/package.json apps/menu-service/
 COPY apps/realtime-gateway/package.json apps/realtime-gateway/
