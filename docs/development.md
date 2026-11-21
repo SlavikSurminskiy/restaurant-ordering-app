@@ -19,17 +19,17 @@
 | `pnpm db:seed`      | `prisma db seed`                               |
 | `pnpm db:studio`    | Open Prisma Studio                             |
 
-Database commands start PostgreSQL themselves if it isn't running. For a single project: `pnpm nx <target> <project>`, e.g. `pnpm nx test frontend`. `pnpm nx run orders-service:prepare-deploy` (and the same target of every backend service) builds the service into `dist/apps/orders-service` ready to install outside the monorepo ([details](architecture.md#deploy-output)).
+Database commands start PostgreSQL themselves if it isn't running. For a single project: `pnpm nx <target> <project>`, e.g. `pnpm nx test frontend`. `pnpm nx run orders-service:prepare-deploy` (and the same target of every backend service) builds the service into `dist/apps/backend/orders-service` ready to install outside the monorepo ([details](architecture.md#deploy-output)).
 
 ## Docker images
 
 All images build from the repository root:
 
 ```bash
-docker build -f apps/orders-service/Dockerfile -t restaurant-orders-service .
-docker build -f apps/auth-service/Dockerfile -t restaurant-auth-service .
-docker build -f apps/menu-service/Dockerfile -t restaurant-menu-service .
-docker build -f apps/realtime-gateway/Dockerfile -t restaurant-realtime-gateway .
+docker build -f apps/backend/orders-service/Dockerfile -t restaurant-orders-service .
+docker build -f apps/backend/auth-service/Dockerfile -t restaurant-auth-service .
+docker build -f apps/backend/menu-service/Dockerfile -t restaurant-menu-service .
+docker build -f apps/backend/realtime-gateway/Dockerfile -t restaurant-realtime-gateway .
 docker build -f apps/frontend/Dockerfile -t restaurant-frontend .
 docker build -f libs/database/Dockerfile -t restaurant-migrate .
 ```

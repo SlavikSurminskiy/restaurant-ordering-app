@@ -10,7 +10,7 @@ Steps 1–6 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) 
 | `EventBus` is in memory (realtime-gateway), and order statuses advance on an in-process timer (backend)  | Exactly **one** replica of each until the bus is shared (see [step 8](#8-several-backend-replicas)). Scale-to-zero platforms also pause the timer. |
 | The frontend calls `/api` on its own origin (`proxy.conf.mjs` in development)                            | Serve frontend and API from one origin: Traefik routes `/` and `/api/*` by path, so no CORS and the `lax` auth cookie keeps working.               |
 | The auth cookie is `Secure` only when `NODE_ENV=production`                                              | Deployed environments set `NODE_ENV=production` and serve over HTTPS.                                                                              |
-| `prisma migrate deploy` and the seed need the Prisma CLI, `prisma.config.ts` and the migrations          | The runtime images (`dist/apps/<service>`) do not have them; migrations run from a separate image as a release step.                               |
+| `prisma migrate deploy` and the seed need the Prisma CLI, `prisma.config.ts` and the migrations          | The runtime images (`dist/apps/backend/<service>`) do not have them; migrations run from a separate image as a release step.                       |
 | The seed creates demo users with known passwords, including an admin, and resets demo orders on each run | A public deployment must not run the development seed as is (see [open questions](#open-questions)).                                               |
 
 ## Platform options
@@ -27,8 +27,8 @@ Steps 1–6 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) 
 
 ### 1. Container images
 
-- `apps/orders-service/Dockerfile`, multi-stage: `pnpm install --frozen-lockfile` → `nx run orders-service:prepare-deploy` → runtime stage on `node:24-slim` with `main.js`, `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` from `dist/apps/orders-service` and `pnpm install --prod --frozen-lockfile`, a non-root user, `NODE_ENV=production`. See [architecture.md](architecture.md#deploy-output).
-- `apps/auth-service/Dockerfile`, `apps/menu-service/Dockerfile` and `apps/realtime-gateway/Dockerfile`: the same with their own `prepare-deploy` and ports 3001, 3002 and 3003.
+- `apps/backend/orders-service/Dockerfile`, multi-stage: `pnpm install --frozen-lockfile` → `nx run orders-service:prepare-deploy` → runtime stage on `node:24-slim` with `main.js`, `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` from `dist/apps/backend/orders-service` and `pnpm install --prod --frozen-lockfile`, a non-root user, `NODE_ENV=production`. See [architecture.md](architecture.md#deploy-output).
+- `apps/backend/auth-service/Dockerfile`, `apps/backend/menu-service/Dockerfile` and `apps/backend/realtime-gateway/Dockerfile`: the same with their own `prepare-deploy` and ports 3001, 3002 and 3003.
 - `apps/frontend/Dockerfile`: `nx build frontend` → `nginx` serving the static files with an SPA fallback to `index.html`, and `404` for any `/api` path: Traefik routes every service path before nginx.
 - `libs/database/Dockerfile`: a migrate image with only the Prisma CLI (root `package.json` version), `libs/database/prisma` and `prisma.config.ts`; its command is `prisma migrate deploy`.
 - `.dockerignore`: `node_modules`, `dist`, `.nx`, `.env*`, `libs/database/src/generated`.
