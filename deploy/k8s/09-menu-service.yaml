@@ -48,7 +48,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: menu
-          image: ghcr.io/slaviksurminskiy/restaurant-menu-service:2cd7686
+          image: ghcr.io/slaviksurminskiy/restaurant-menu-service:36a6270
           ports:
             - name: http
               containerPort: 3002
