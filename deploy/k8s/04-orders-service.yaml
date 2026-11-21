@@ -57,7 +57,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: orders
-          image: ghcr.io/slaviksurminskiy/restaurant-orders-service:28ef74d
+          image: ghcr.io/slaviksurminskiy/restaurant-orders-service:3d0554f
           ports:
             - name: http
               containerPort: 3000

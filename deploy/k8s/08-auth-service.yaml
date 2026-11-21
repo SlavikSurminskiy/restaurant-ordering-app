@@ -50,7 +50,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: auth
-          image: ghcr.io/slaviksurminskiy/restaurant-auth-service:156b9d0
+          image: ghcr.io/slaviksurminskiy/restaurant-auth-service:3d0554f
           ports:
             - name: http
               containerPort: 3001
