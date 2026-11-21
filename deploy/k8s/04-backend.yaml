@@ -9,6 +9,7 @@
 #   http              port name; the Service's targetPort and the probes refer to the container port by it
 #   postgres, backend Secrets created by hand (docs/deployment.md, step 4)
 #   db                host name = the Service from 02-postgres.yaml
+#   menu-service      host name = the Service from 09-menu-service.yaml (prices for new orders)
 
 # Non-secret settings. Values are always strings. Changing them does not restart running pods:
 # run `kubectl -n restaurant rollout restart deployment backend` afterwards.
@@ -18,8 +19,9 @@ metadata:
   name: backend-config
   namespace: restaurant
 data:
-  ORDER_DISCOUNT: '500'
   ORDER_STATUS_STEP_SECONDS: '20'
+  # Where orders asks for prices, availability and the discount while placing an order.
+  MENU_SERVICE_URL: http://menu-service:3002
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -27,8 +29,9 @@ metadata:
   name: backend
   namespace: restaurant
   annotations:
-    # Argo CD rolls it out after the migrate Job (wave 1, 03-migrate-job.yaml) has completed.
-    argocd.argoproj.io/sync-wave: '2'
+    # After the migrations (wave 1) and after the Ingress (wave 3): routes that move from the
+    # backend to another service switch there first, then the backend without them rolls out.
+    argocd.argoproj.io/sync-wave: '4'
 spec:
   # Exactly one: the event bus and the order-status timer live in the process memory.
   replicas: 1

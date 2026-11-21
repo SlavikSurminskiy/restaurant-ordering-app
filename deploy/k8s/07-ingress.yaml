@@ -1,4 +1,4 @@
-# The public address of the app: https://92-5-5-205.sslip.io -> Traefik -> auth-service or frontend.
+# The public address of the app: https://92-5-5-205.sslip.io -> Traefik -> a service by path.
 #   kubectl apply -f deploy/k8s/07-ingress.yaml
 #
 # Names in this file and how they are linked:
@@ -8,14 +8,15 @@
 #   restaurant-tls       Secret where cert-manager puts the certificate; Traefik reads it from there
 #   frontend, http       Service and port name from 05-frontend.yaml
 #   auth-service         Service from 08-auth-service.yaml
+#   menu-service         Service from 09-menu-service.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: restaurant
   namespace: restaurant
   annotations:
-    # Argo CD applies it after wave 2 is healthy, so /api/auth switches to auth-service only once
-    # its pods are ready.
+    # Argo CD applies it after wave 2 is healthy, so a path switches to a new service only once
+    # its pods are ready; the backend (wave 4) drops the moved routes after that.
     argocd.argoproj.io/sync-wave: '3'
     cert-manager.io/cluster-issuer: letsencrypt-prod
     # HTTPS only; on port 80 Traefik redirects to HTTPS (deploy/helm/traefik-values.yaml).
@@ -37,6 +38,20 @@ spec:
             backend:
               service:
                 name: auth-service
+                port:
+                  name: http
+          - path: /api/menu
+            pathType: Prefix
+            backend:
+              service:
+                name: menu-service
+                port:
+                  name: http
+          - path: /api/discount
+            pathType: Prefix
+            backend:
+              service:
+                name: menu-service
                 port:
                   name: http
           # Everything else goes to nginx; it serves the app and proxies the rest of /api itself.

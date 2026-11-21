@@ -1,5 +1,5 @@
-# Production-like stack from the Docker images: Postgres → migrate → backend + auth-service →
-# frontend, with Traefik in front routing by path like the Ingress in deploy/k8s/07-ingress.yaml.
+# Production-like stack from the Docker images: Postgres → migrate → backend, auth-service and
+# menu-service → frontend, with Traefik in front routing by path like the Ingress in deploy/k8s/07-ingress.yaml.
 # Separate from the development docker-compose.yml: own project name, volume and ports.
 #   cp .env.prod.example .env.prod   # then set real secrets
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
@@ -55,7 +55,7 @@ services:
     environment:
       DATABASE_URL: *database-url
       JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
-      ORDER_DISCOUNT: ${ORDER_DISCOUNT:-500}
+      MENU_SERVICE_URL: http://menu-service:3002
       ORDER_STATUS_STEP_SECONDS: ${ORDER_STATUS_STEP_SECONDS:-20}
     depends_on:
       migrate:
@@ -107,6 +107,39 @@ services:
       traefik.http.routers.auth.rule: Path(`/api/auth`) || PathPrefix(`/api/auth/`)
       traefik.http.services.auth.loadbalancer.server.port: '3001'
 
+  # Menu, categories, dishes and discount; sends menu events to the backend for SSE.
+  menu-service:
+    build:
+      context: .
+      dockerfile: apps/menu-service/Dockerfile
+    image: restaurant-menu-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *database-url
+      JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
+      ORDER_DISCOUNT: ${ORDER_DISCOUNT:-500}
+      EVENTS_URL: http://backend:3000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # The image has no curl; Node's fetch does the same.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3002/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.menu.rule: Path(`/api/menu`) || PathPrefix(`/api/menu/`) || Path(`/api/discount`)
+      traefik.http.services.menu.loadbalancer.server.port: '3002'
+
   frontend:
     build:
       context: .
@@ -139,6 +172,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       auth-service:
+        condition: service_healthy
+      menu-service:
         condition: service_healthy
       frontend:
         condition: service_started
