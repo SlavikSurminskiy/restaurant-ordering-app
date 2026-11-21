@@ -1,4 +1,4 @@
-# Production-like stack from the Docker images: Postgres → migrate → backend, auth-service,
+# Production-like stack from the Docker images: Postgres → migrate → orders-service, auth-service,
 # menu-service and realtime-gateway → frontend, with Traefik in front routing by path like the Ingress in deploy/k8s/07-ingress.yaml.
 # Separate from the development docker-compose.yml: own project name, volume and ports.
 #   cp .env.prod.example .env.prod   # then set real secrets
@@ -34,7 +34,7 @@ services:
       timeout: 5s
       retries: 10
 
-  # Runs once per `up` and exits; the backend starts only if it exits with 0.
+  # Runs once per `up` and exits; the services start only if it exits with 0.
   migrate:
     build:
       context: .
@@ -46,11 +46,11 @@ services:
       postgres:
         condition: service_healthy
 
-  backend:
+  orders-service:
     build:
       context: .
-      dockerfile: apps/backend/Dockerfile
-    image: restaurant-backend
+      dockerfile: apps/orders-service/Dockerfile
+    image: restaurant-orders-service
     restart: unless-stopped
     environment:
       DATABASE_URL: *database-url
@@ -74,8 +74,12 @@ services:
       timeout: 5s
       retries: 6
       start_period: 10s
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.orders.rule: Path(`/api/orders`) || PathPrefix(`/api/orders/`)
+      traefik.http.services.orders.loadbalancer.server.port: '3000'
 
-  # Signs the JWT; the backend verifies it with the same JWT_SECRET.
+  # Signs the JWT; the other services verify it with the same JWT_SECRET.
   auth-service:
     build:
       context: .
@@ -141,7 +145,7 @@ services:
       traefik.http.routers.menu.rule: Path(`/api/menu`) || PathPrefix(`/api/menu/`) || Path(`/api/discount`)
       traefik.http.services.menu.loadbalancer.server.port: '3002'
 
-  # SSE for browsers; the backend and menu-service POST events to it. No database.
+  # SSE for browsers; orders-service and menu-service POST events to it. No database.
   realtime-gateway:
     build:
       context: .
@@ -175,7 +179,7 @@ services:
     image: restaurant-frontend
     restart: unless-stopped
     depends_on:
-      backend:
+      orders-service:
         condition: service_healthy
     labels:
       traefik.enable: 'true'
@@ -199,6 +203,8 @@ services:
       # on a development machine, not on a shared server.
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
+      orders-service:
+        condition: service_healthy
       auth-service:
         condition: service_healthy
       menu-service:

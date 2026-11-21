@@ -10,6 +10,7 @@
 #   auth-service         Service from 08-auth-service.yaml
 #   menu-service         Service from 09-menu-service.yaml
 #   realtime-gateway     Service from 10-realtime-gateway.yaml
+#   orders-service       Service from 04-orders-service.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -17,7 +18,7 @@ metadata:
   namespace: restaurant
   annotations:
     # Argo CD applies it after wave 2 is healthy, so a path switches to a new service only once
-    # its pods are ready; the backend (wave 4) drops the moved routes after that.
+    # its pods are ready.
     argocd.argoproj.io/sync-wave: '3'
     cert-manager.io/cluster-issuer: letsencrypt-prod
     # HTTPS only; on port 80 Traefik redirects to HTTPS (deploy/helm/traefik-values.yaml).
@@ -49,6 +50,13 @@ spec:
                 name: realtime-gateway
                 port:
                   name: http
+          - path: /api/orders
+            pathType: Prefix
+            backend:
+              service:
+                name: orders-service
+                port:
+                  name: http
           - path: /api/menu
             pathType: Prefix
             backend:
@@ -63,7 +71,7 @@ spec:
                 name: menu-service
                 port:
                   name: http
-          # Everything else goes to nginx; it serves the app and proxies the rest of /api itself.
+          # Everything else goes to nginx: the app's static files.
           - path: /
             pathType: Prefix
             backend:

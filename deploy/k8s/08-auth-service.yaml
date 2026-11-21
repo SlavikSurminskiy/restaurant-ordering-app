@@ -8,7 +8,7 @@
 #   role: auth           label; it only has to be the same in the three places marked [L]
 #   http                 port name; the Service's targetPort and the probes refer to it
 #   postgres, backend    Secrets created by hand (docs/deployment.md, step 4); JWT_SECRET is the
-#                        one the backend verifies tokens with, so both read the same Secret
+#                        one the other services verify tokens with, so all read the same Secret
 #   db                   host name = the Service from 02-postgres.yaml
 
 # Non-secret settings. Changing them does not restart running pods:
@@ -46,7 +46,7 @@ spec:
         role: auth # [L] the label every created pod gets
     spec:
       # Without it Kubernetes adds AUTH_SERVICE_PORT=tcp://<ip>:3001 for the Service
-      # `auth-service`, the same variable the app reads as its port (see 04-backend.yaml).
+      # `auth-service`, the same variable the app reads as its port (see 04-orders-service.yaml).
       enableServiceLinks: false
       containers:
         - name: auth
@@ -92,7 +92,7 @@ spec:
             initialDelaySeconds: 20
             periodSeconds: 20
             failureThreshold: 3
-          # The backend uses about 180 MiB with SSE and the timer; this service does less.
+          # orders-service uses about 180 MiB; this service does less.
           # CPU is the scarce resource on the two nodes, so the request is small.
           resources:
             requests:
