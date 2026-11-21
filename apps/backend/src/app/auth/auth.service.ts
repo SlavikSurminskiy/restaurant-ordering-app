@@ -3,14 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
+import { JwtPayload } from '@restaurant/backend-auth';
 import {
   hashPassword,
   PrismaService,
   verifyPassword,
 } from '@restaurant/database';
 import { AuthUser } from '@restaurant/shared-api-types';
-
-import { JwtPayload } from './auth.models';
 
 const AUTH_USER_SELECT = {
   id: true,

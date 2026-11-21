@@ -10,7 +10,7 @@ import {
   takeUntil,
 } from 'rxjs';
 
-import { AuthCookieService } from '../auth/utils/auth-cookie.service';
+import { AuthCookieService } from '@restaurant/backend-auth';
 
 import { EventsService } from './events.service';
 

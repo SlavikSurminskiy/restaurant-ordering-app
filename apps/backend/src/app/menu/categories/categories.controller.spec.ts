@@ -4,11 +4,8 @@ import { Test } from '@nestjs/testing';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
+import { JwtAuthGuard, Roles, RolesGuard } from '@restaurant/backend-auth';
 import { UserRole } from '@restaurant/shared-api-types';
-
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
 
 import { CategoriesController } from './categories.controller';
 import { CategoriesService } from './categories.service';

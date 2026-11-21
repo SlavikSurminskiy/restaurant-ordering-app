@@ -5,12 +5,11 @@ import type { Response } from 'express';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
+import { AUTH_COOKIE, AuthCookieService } from '@restaurant/backend-auth';
 import { AuthUser, UserRole } from '@restaurant/shared-api-types';
 
-import { AUTH_COOKIE } from './auth.constants';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AuthCookieService } from './utils/auth-cookie.service';
 
 describe(AuthController.name, () => {
   describe('login', () => {

@@ -5,14 +5,13 @@ import { Test } from '@nestjs/testing';
 import type { Request } from 'express';
 import { Subject } from 'rxjs';
 
+import { AuthCookieService } from '@restaurant/backend-auth';
 import {
   UserRole,
   ServerEvent,
   MenuEventType,
   DishDeletedEvent,
 } from '@restaurant/shared-api-types';
-
-import { AuthCookieService } from '../auth/utils/auth-cookie.service';
 
 import { EventsController, HEARTBEAT_INTERVAL_MS } from './events.controller';
 import { EventsService } from './events.service';

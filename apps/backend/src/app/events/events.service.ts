@@ -1,14 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { filter, Observable } from 'rxjs';
 
+import { RequestUser } from '@restaurant/backend-auth';
 import {
   UserRole,
   ServerEvent,
   MenuEventType,
   OrderEventType,
 } from '@restaurant/shared-api-types';
-
-import { RequestUser } from '../auth/auth.models';
 
 import { EventBus } from './event-bus/event-bus';
 
