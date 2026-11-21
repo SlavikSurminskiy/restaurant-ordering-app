@@ -36,13 +36,13 @@ jobs:
       matrix:
         image:
           - name: restaurant-orders-service
-            dockerfile: apps/orders-service/Dockerfile
+            dockerfile: apps/backend/orders-service/Dockerfile
           - name: restaurant-auth-service
-            dockerfile: apps/auth-service/Dockerfile
+            dockerfile: apps/backend/auth-service/Dockerfile
           - name: restaurant-menu-service
-            dockerfile: apps/menu-service/Dockerfile
+            dockerfile: apps/backend/menu-service/Dockerfile
           - name: restaurant-realtime-gateway
-            dockerfile: apps/realtime-gateway/Dockerfile
+            dockerfile: apps/backend/realtime-gateway/Dockerfile
           - name: restaurant-frontend
             dockerfile: apps/frontend/Dockerfile
           - name: restaurant-migrate

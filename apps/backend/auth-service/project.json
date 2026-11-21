@@ -1,0 +1,63 @@
+{
+  "name": "auth-service",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/auth-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:app"],
+  "targets": {
+    "prepare-deploy": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "executor": "nx:run-commands",
+      "inputs": [
+        "production",
+        "^production",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/pnpm-lock.yaml",
+        "{workspaceRoot}/pnpm-workspace.yaml",
+        {
+          "runtime": "pnpm --version"
+        }
+      ],
+      "outputs": [
+        "{workspaceRoot}/dist/apps/backend/auth-service/package.json",
+        "{workspaceRoot}/dist/apps/backend/auth-service/pnpm-lock.yaml"
+      ],
+      "options": {
+        "parallel": false,
+        "commands": [
+          "node tools/scripts/strip-workspace-deps.mjs dist/apps/backend/auth-service",
+          "pnpm install --lockfile-only --dir dist/apps/backend/auth-service"
+        ]
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build", "database:prisma-seed"],
+      "readyWhen": {
+        "signal": true
+      },
+      "options": {
+        "buildTarget": "auth-service:build",
+        "runBuildTargetDependencies": false,
+        "port": 9230
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "auth-service:build:development"
+        },
+        "production": {
+          "buildTarget": "auth-service:build:production"
+        }
+      }
+    },
+    "build": {
+      "dependsOn": ["^build", "^prisma-generate"]
+    },
+    "test": {
+      "dependsOn": ["^prisma-generate"]
+    }
+  }
+}

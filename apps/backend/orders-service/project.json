@@ -1,0 +1,62 @@
+{
+  "name": "orders-service",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/orders-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:app"],
+  "targets": {
+    "prepare-deploy": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "executor": "nx:run-commands",
+      "inputs": [
+        "production",
+        "^production",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/pnpm-lock.yaml",
+        "{workspaceRoot}/pnpm-workspace.yaml",
+        {
+          "runtime": "pnpm --version"
+        }
+      ],
+      "outputs": [
+        "{workspaceRoot}/dist/apps/backend/orders-service/package.json",
+        "{workspaceRoot}/dist/apps/backend/orders-service/pnpm-lock.yaml"
+      ],
+      "options": {
+        "parallel": false,
+        "commands": [
+          "node tools/scripts/strip-workspace-deps.mjs dist/apps/backend/orders-service",
+          "pnpm install --lockfile-only --dir dist/apps/backend/orders-service"
+        ]
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build", "database:prisma-seed"],
+      "readyWhen": {
+        "signal": true
+      },
+      "options": {
+        "buildTarget": "orders-service:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "orders-service:build:development"
+        },
+        "production": {
+          "buildTarget": "orders-service:build:production"
+        }
+      }
+    },
+    "build": {
+      "dependsOn": ["^build", "^prisma-generate"]
+    },
+    "test": {
+      "dependsOn": ["^prisma-generate"]
+    }
+  }
+}

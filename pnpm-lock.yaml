@@ -220,17 +220,68 @@ importers:
         specifier: ^5.2.1
         version: 5.2.7(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(webpack-cli@7.2.3)(webpack@5.110.3)
 
-  apps/auth-service:
+  apps/backend/auth-service:
     dependencies:
       '@restaurant/backend-auth':
         specifier: workspace:*
-        version: link:../../libs/backend/auth
+        version: link:../../../libs/backend/auth
       '@restaurant/database':
         specifier: workspace:*
-        version: link:../../libs/database
+        version: link:../../../libs/database
       '@restaurant/shared-api-types':
         specifier: workspace:*
-        version: link:../../libs/shared/api-types
+        version: link:../../../libs/shared/api-types
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  apps/backend/menu-service:
+    dependencies:
+      '@restaurant/backend-auth':
+        specifier: workspace:*
+        version: link:../../../libs/backend/auth
+      '@restaurant/backend-events':
+        specifier: workspace:*
+        version: link:../../../libs/backend/events
+      '@restaurant/database':
+        specifier: workspace:*
+        version: link:../../../libs/database
+      '@restaurant/shared-api-types':
+        specifier: workspace:*
+        version: link:../../../libs/shared/api-types
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  apps/backend/orders-service:
+    dependencies:
+      '@restaurant/backend-auth':
+        specifier: workspace:*
+        version: link:../../../libs/backend/auth
+      '@restaurant/backend-events':
+        specifier: workspace:*
+        version: link:../../../libs/backend/events
+      '@restaurant/database':
+        specifier: workspace:*
+        version: link:../../../libs/database
+      '@restaurant/shared-api-types':
+        specifier: workspace:*
+        version: link:../../../libs/shared/api-types
+      '@restaurant/shared-utils':
+        specifier: workspace:*
+        version: link:../../../libs/shared/utils
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  apps/backend/realtime-gateway:
+    dependencies:
+      '@restaurant/backend-auth':
+        specifier: workspace:*
+        version: link:../../../libs/backend/auth
+      '@restaurant/shared-api-types':
+        specifier: workspace:*
+        version: link:../../../libs/shared/api-types
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -243,57 +294,6 @@ importers:
       '@restaurant/shared-utils':
         specifier: workspace:*
         version: link:../../libs/shared/utils
-
-  apps/menu-service:
-    dependencies:
-      '@restaurant/backend-auth':
-        specifier: workspace:*
-        version: link:../../libs/backend/auth
-      '@restaurant/backend-events':
-        specifier: workspace:*
-        version: link:../../libs/backend/events
-      '@restaurant/database':
-        specifier: workspace:*
-        version: link:../../libs/database
-      '@restaurant/shared-api-types':
-        specifier: workspace:*
-        version: link:../../libs/shared/api-types
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
-
-  apps/orders-service:
-    dependencies:
-      '@restaurant/backend-auth':
-        specifier: workspace:*
-        version: link:../../libs/backend/auth
-      '@restaurant/backend-events':
-        specifier: workspace:*
-        version: link:../../libs/backend/events
-      '@restaurant/database':
-        specifier: workspace:*
-        version: link:../../libs/database
-      '@restaurant/shared-api-types':
-        specifier: workspace:*
-        version: link:../../libs/shared/api-types
-      '@restaurant/shared-utils':
-        specifier: workspace:*
-        version: link:../../libs/shared/utils
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
-
-  apps/realtime-gateway:
-    dependencies:
-      '@restaurant/backend-auth':
-        specifier: workspace:*
-        version: link:../../libs/backend/auth
-      '@restaurant/shared-api-types':
-        specifier: workspace:*
-        version: link:../../libs/shared/api-types
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
 
   libs/backend/auth:
     dependencies:
