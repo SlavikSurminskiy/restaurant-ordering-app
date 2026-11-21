@@ -217,6 +217,21 @@ importers:
         specifier: ^5.2.1
         version: 5.2.7(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(webpack-cli@7.2.3)(webpack@5.110.3)
 
+  apps/auth-service:
+    dependencies:
+      '@restaurant/backend-auth':
+        specifier: workspace:*
+        version: link:../../libs/backend/auth
+      '@restaurant/database':
+        specifier: workspace:*
+        version: link:../../libs/database
+      '@restaurant/shared-api-types':
+        specifier: workspace:*
+        version: link:../../libs/shared/api-types
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   apps/backend:
     dependencies:
       '@restaurant/backend-auth':
