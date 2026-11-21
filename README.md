@@ -13,10 +13,10 @@ Requirements: Node.js 24+, pnpm 11, Docker (running).
 ```bash
 pnpm install    # dependencies + Prisma Client
 pnpm env:init   # .env from .env.example (keeps an existing .env)
-pnpm start      # PostgreSQL → migrations → seed → backend + auth-service + menu-service + frontend
+pnpm start      # PostgreSQL → migrations → seed → backend + auth-service + menu-service + realtime-gateway + frontend
 ```
 
-Open http://localhost:4200 (the API is on http://localhost:3000/api, auth on :3001, menu on :3002). Seeded users for local development:
+Open http://localhost:4200 (the API is on http://localhost:3000/api, auth on :3001, menu on :3002, events on :3003). Seeded users for local development:
 
 | Email                  | Password      | Role     |
 | ---------------------- | ------------- | -------- |

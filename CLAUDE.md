@@ -9,11 +9,11 @@ Restaurant ordering app: Nx 24 monorepo, Angular 22 frontend, NestJS 11 backend,
 ```bash
 pnpm install                 # postinstall also runs prisma generate
 pnpm env:init                # create .env from .env.example (never overwrites)
-pnpm start                   # docker Postgres → migrate deploy → seed → backend (3000) + auth-service (3001) + menu-service (3002) → frontend (4200)
+pnpm start                   # docker Postgres → migrate deploy → seed → backend (3000) + auth-service (3001) + menu-service (3002) + realtime-gateway (3003) → frontend (4200)
 
 pnpm build | pnpm test | pnpm lint      # run-many over all projects
 pnpm format | pnpm format:check
-pnpm nx <target> <project>              # projects: frontend, backend, auth-service, menu-service, backend-auth, database, shared-api-types, shared-utils
+pnpm nx <target> <project>              # projects: frontend, backend, auth-service, menu-service, realtime-gateway, backend-auth, backend-events, database, shared-api-types, shared-utils
 
 pnpm db:generate | db:migrate | db:deploy | db:reset | db:seed | db:studio
 ```
@@ -31,19 +31,21 @@ Add `--skip-nx-cache` when you need a real re-run; Nx caches build/lint/test.
 ## Architecture
 
 ```
-apps/frontend            Angular SPA; /api/auth → auth-service, /api/menu and /api/discount → menu-service, the rest of /api → backend (apps/frontend/proxy.conf.mjs; in deployments Traefik routes by path)
-apps/backend             NestJS, global prefix /api; orders, SSE, the order-status timer
+apps/frontend            Angular SPA; /api/auth → auth-service, /api/menu and /api/discount → menu-service, /api/events → realtime-gateway, the rest of /api → backend (apps/frontend/proxy.conf.mjs; in deployments Traefik routes by path)
+apps/backend             NestJS, global prefix /api; orders and the order-status timer
 apps/auth-service        NestJS: login, logout, me; the only service that signs the JWT (stage A of docs/microservices.md)
-apps/menu-service        NestJS: menu, categories, dishes, discount; sends menu.* events to the backend over HTTP
+apps/menu-service        NestJS: menu, categories, dishes, discount; sends menu.* events to the gateway over HTTP
+apps/realtime-gateway    NestJS: SSE (GET /api/events) from an in-memory EventBus fed by POST /internal/events; no database
 libs/backend/auth        @restaurant/backend-auth — JwtAuthModule, guards, decorators, cookie verification for every backend service
+libs/backend/events      @restaurant/backend-events — EventPublisher(Module): POST events to the gateway (EVENTS_URL)
 libs/shared/api-types    @restaurant/shared-api-types — API contracts used by both apps
 libs/shared/utils        @restaurant/shared-utils — logic both apps share (e.g. `calculateTotals`)
 libs/database            @restaurant/database — Prisma schema/migrations, seed (`src/seed`), PrismaService (backend services only)
 ```
 
 - **Module boundaries** are enforced by `@nx/enforce-module-boundaries` (`eslint.config.mjs`) via tags: `scope:frontend` and `scope:backend` may only import their own scope plus `scope:shared`. Every new project needs a `scope:*` tag. Prisma models must never leak into `shared-api-types`; the frontend depends only on API contracts.
-- **Startup chain**: `frontend:serve` depends on `backend:serve`, `auth-service:serve` and `menu-service:serve`, each of which depends on its own build (→ `^prisma-generate`) and `database:prisma-seed` (→ `prisma-migrate-deploy` → `postgres-up`, i.e. `docker compose up -d --wait`). All `database:prisma-*` targets that need a DB depend on `postgres-up`; the seed is idempotent, so it runs on every start. All servers report readiness to Nx through `NX_READY_SIGNAL_SOCKET` in their `main.ts` (`readyWhen: signal`), and only then the frontend dev server starts.
-- **Backend wiring**: `ConfigModule` is global and reads `.env` if present; `DatabaseModule` is `@Global()` and exports `PrismaService` (extends `PrismaClient` with the `PrismaPg` driver adapter). `GET /api/health` returns `HealthResponse` from shared-api-types. `EventsModule` is `@Global()` and exports `EventBus` (in-memory RxJS); `GET /api/events` streams `ServerEvent` (shared-api-types) over SSE with a comment heartbeat — see `docs/architecture.md`. Service-to-service routes (`INTERNAL_*_PATH` in shared-api-types: `POST /internal/events` on the backend, `POST /internal/order-pricing` on menu-service) are excluded from the `/api` prefix, so no proxy routes them from outside; their URLs come from `EVENTS_URL` and `MENU_SERVICE_URL`.
+- **Startup chain**: `frontend:serve` depends on `backend:serve`, `auth-service:serve`, `menu-service:serve` and `realtime-gateway:serve`, each of which depends on its own build (→ `^prisma-generate`) and `database:prisma-seed` (→ `prisma-migrate-deploy` → `postgres-up`, i.e. `docker compose up -d --wait`). All `database:prisma-*` targets that need a DB depend on `postgres-up`; the seed is idempotent, so it runs on every start. All servers report readiness to Nx through `NX_READY_SIGNAL_SOCKET` in their `main.ts` (`readyWhen: signal`), and only then the frontend dev server starts. `pnpm start` passes `--parallel=8`: every continuous server holds a task slot for its whole life, and with more servers than slots (default 3) Nx starts the frontend before all of them are ready.
+- **Backend wiring**: `ConfigModule` is global and reads `.env` if present; `DatabaseModule` is `@Global()` and exports `PrismaService` (extends `PrismaClient` with the `PrismaPg` driver adapter). `GET /api/health` returns `HealthResponse` from shared-api-types. In realtime-gateway `EventsModule` holds `EventBus` (in-memory RxJS); `GET /api/events` streams `ServerEvent` (shared-api-types) over SSE with a comment heartbeat — see `docs/architecture.md`. The backend and menu-service publish through `EventPublisher` from `@restaurant/backend-events`. Service-to-service routes (`INTERNAL_*_PATH` in shared-api-types: `POST /internal/events` on realtime-gateway, `POST /internal/order-pricing` on menu-service) are excluded from the `/api` prefix, so no proxy routes them from outside; their URLs come from `EVENTS_URL` and `MENU_SERVICE_URL`.
 - **Frontend conventions**: standalone components, zoneless, signals; feature pages live in `src/app/features/<name>/` and are lazy-loaded from `app.routes.ts`. Material theme is defined in `src/styles.scss` with `mat.theme`. Tests use `@testing-library/angular` plus `HttpTestingController`.
 - **Generators**: `nx.json` sets defaults (scss, OnPush, vitest). Prefer `pnpm nx g ...` and `@nx/workspace:move` for renames; after a move, fix relative paths in the project's `vitest.config.mts` and `workspace:*` deps in apps' `package.json`, which the generator does not update.
 
@@ -57,4 +59,4 @@ libs/database            @restaurant/database — Prisma schema/migrations, seed
 - **Prisma client** is generated to `libs/database/src/generated` (git-ignored, excluded from lint/prettier). `moduleFormat = "cjs"` in `schema.prisma` is required: the backend is bundled as CommonJS by webpack, and `esm` breaks the build.
 - **Migrations**: never edit a Prisma-generated `migration.sql`. Schema change → `pnpm db:migrate --name <x>` → commit. CHECK constraints and other SQL Prisma can't model go into a separate `--create-only` migration and a separate commit (see `docs/architecture.md`). `prisma migrate reset` refuses to run under Claude Code without explicit user consent.
 - **New env variables** must also be added to `.env.example`; `.env` and `.env.*` are git-ignored.
-- `backend:serve` opens the Node inspector on 9229, `auth-service:serve` on 9230, `menu-service:serve` on 9231. Leftover dev servers can hold ports 3000–3002/4200/9229–9231 after a run.
+- `backend:serve` opens the Node inspector on 9229, `auth-service:serve` on 9230, `menu-service:serve` on 9231, `realtime-gateway:serve` on 9232. Leftover dev servers can hold ports 3000–3003/4200/9229–9232 after a run.
