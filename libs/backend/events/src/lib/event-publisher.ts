@@ -7,9 +7,9 @@ import {
 } from '@restaurant/shared-api-types';
 
 /**
- * Sends events to the service that streams them to browsers (the backend for now); the base URL
- * and the timeout come from `EventsModule`. A failed send is logged and not thrown: the change is
- * already committed, and clients reload the menu snapshot when their stream reconnects.
+ * Sends events to the realtime gateway, which streams them to browsers; the base URL and the
+ * timeout come from `EventPublisherModule`. A failed send is logged and not thrown: the change is
+ * already committed, and clients reload their snapshot when their stream reconnects.
  */
 @Injectable()
 export class EventPublisher {

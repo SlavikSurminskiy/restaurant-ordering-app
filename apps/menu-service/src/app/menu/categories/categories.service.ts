@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { EventPublisher } from '@restaurant/backend-events';
 import {
   isPrismaError,
   PrismaErrorCode,
@@ -16,7 +17,6 @@ import {
   UpdateCategoryRequest,
 } from '@restaurant/shared-api-types';
 
-import { EventPublisher } from '../../events/event-publisher';
 import { CATEGORY_SELECT } from '../menu.constants';
 
 @Injectable()

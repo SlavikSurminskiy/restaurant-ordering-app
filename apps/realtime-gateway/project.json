@@ -1,0 +1,63 @@
+{
+  "name": "realtime-gateway",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/realtime-gateway/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:app"],
+  "targets": {
+    "prepare-deploy": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "executor": "nx:run-commands",
+      "inputs": [
+        "production",
+        "^production",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/pnpm-lock.yaml",
+        "{workspaceRoot}/pnpm-workspace.yaml",
+        {
+          "runtime": "pnpm --version"
+        }
+      ],
+      "outputs": [
+        "{workspaceRoot}/dist/apps/realtime-gateway/package.json",
+        "{workspaceRoot}/dist/apps/realtime-gateway/pnpm-lock.yaml"
+      ],
+      "options": {
+        "parallel": false,
+        "commands": [
+          "node tools/scripts/strip-workspace-deps.mjs dist/apps/realtime-gateway",
+          "pnpm install --lockfile-only --dir dist/apps/realtime-gateway"
+        ]
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build", "database:prisma-seed"],
+      "readyWhen": {
+        "signal": true
+      },
+      "options": {
+        "buildTarget": "realtime-gateway:build",
+        "runBuildTargetDependencies": false,
+        "port": 9232
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "realtime-gateway:build:development"
+        },
+        "production": {
+          "buildTarget": "realtime-gateway:build:production"
+        }
+      }
+    },
+    "build": {
+      "dependsOn": ["^build", "^prisma-generate"]
+    },
+    "test": {
+      "dependsOn": ["^prisma-generate"]
+    }
+  }
+}

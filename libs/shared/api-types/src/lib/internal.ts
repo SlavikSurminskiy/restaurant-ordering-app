@@ -3,7 +3,7 @@
 import { Dish } from './menu';
 import { Money } from './money';
 
-/** `POST` on the backend (until the realtime gateway): body is a `ServerEvent` for SSE clients. */
+/** `POST` on the realtime gateway: body is a `ServerEvent` for SSE clients. */
 export const INTERNAL_EVENTS_PATH = 'internal/events';
 
 /** `POST` on menu-service: prices, availability and the discount for an order being placed. */

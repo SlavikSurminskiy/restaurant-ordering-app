@@ -240,6 +240,9 @@ importers:
       '@restaurant/backend-auth':
         specifier: workspace:*
         version: link:../../libs/backend/auth
+      '@restaurant/backend-events':
+        specifier: workspace:*
+        version: link:../../libs/backend/events
       '@restaurant/database':
         specifier: workspace:*
         version: link:../../libs/database
@@ -267,6 +270,9 @@ importers:
       '@restaurant/backend-auth':
         specifier: workspace:*
         version: link:../../libs/backend/auth
+      '@restaurant/backend-events':
+        specifier: workspace:*
+        version: link:../../libs/backend/events
       '@restaurant/database':
         specifier: workspace:*
         version: link:../../libs/database
@@ -277,7 +283,25 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  apps/realtime-gateway:
+    dependencies:
+      '@restaurant/backend-auth':
+        specifier: workspace:*
+        version: link:../../libs/backend/auth
+      '@restaurant/shared-api-types':
+        specifier: workspace:*
+        version: link:../../libs/shared/api-types
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   libs/backend/auth:
+    dependencies:
+      '@restaurant/shared-api-types':
+        specifier: workspace:*
+        version: link:../../shared/api-types
+
+  libs/backend/events:
     dependencies:
       '@restaurant/shared-api-types':
         specifier: workspace:*

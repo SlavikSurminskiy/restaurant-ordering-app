@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { RequestUser } from '@restaurant/backend-auth';
+import { EventPublisher } from '@restaurant/backend-events';
 import {
   isPrismaError,
   PrismaErrorCode,
@@ -19,8 +20,6 @@ import {
 } from '@restaurant/shared-api-types';
 import { calculateTotals } from '@restaurant/shared-utils';
 
-import { EventBus } from '../events/event-bus/event-bus';
-
 import { MenuClient } from './menu-client/menu-client.service';
 import { OrderConflictsService } from './order-conflicts/order-conflicts.service';
 import {
@@ -34,7 +33,7 @@ import { toOrder } from './orders.mapper';
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly events: EventBus,
+    private readonly events: EventPublisher,
     private readonly menu: MenuClient,
     private readonly orderStatus: OrderStatusService,
     private readonly orderConflicts: OrderConflictsService,
@@ -109,7 +108,7 @@ export class OrdersService {
       throw error;
     }
 
-    this.events.publish({ type: OrderEventType.Created, order });
+    await this.events.publish({ type: OrderEventType.Created, order });
 
     return order;
   }
@@ -203,7 +202,7 @@ export class OrdersService {
       throw error;
     }
 
-    this.events.publish({ type: OrderEventType.Updated, order });
+    await this.events.publish({ type: OrderEventType.Updated, order });
 
     return order;
   }

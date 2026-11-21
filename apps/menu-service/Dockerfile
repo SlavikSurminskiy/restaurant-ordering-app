@@ -15,7 +15,9 @@ COPY apps/auth-service/package.json apps/auth-service/
 COPY apps/backend/package.json apps/backend/
 COPY apps/frontend/package.json apps/frontend/
 COPY apps/menu-service/package.json apps/menu-service/
+COPY apps/realtime-gateway/package.json apps/realtime-gateway/
 COPY libs/backend/auth/package.json libs/backend/auth/
+COPY libs/backend/events/package.json libs/backend/events/
 COPY libs/database/package.json libs/database/
 COPY libs/shared/api-types/package.json libs/shared/api-types/
 COPY libs/shared/utils/package.json libs/shared/utils/

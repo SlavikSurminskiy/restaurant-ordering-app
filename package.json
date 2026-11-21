@@ -7,7 +7,7 @@
   "scripts": {
     "postinstall": "nx run database:prisma-generate",
     "env:init": "node -e \"const fs = require('fs'); if (fs.existsSync('.env')) { console.log('.env already exists, left unchanged'); } else { fs.copyFileSync('.env.example', '.env'); console.log('Created .env from .env.example'); }\"",
-    "start": "nx serve frontend",
+    "start": "nx serve frontend --parallel=8",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
     "lint": "nx run-many -t lint",
