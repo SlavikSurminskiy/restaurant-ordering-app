@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { JwtAuthModule } from '@restaurant/backend-auth';
+import { EventPublisherModule } from '@restaurant/backend-events';
 import { DatabaseModule } from '@restaurant/database';
 
 import { DiscountModule } from './discount/discount.module';
-import { EventsModule } from './events/events.module';
 import { HealthModule } from './health/health.module';
 import { MenuModule } from './menu/menu.module';
 import { OrderPricingModule } from './order-pricing/order-pricing.module';
@@ -15,7 +15,7 @@ import { OrderPricingModule } from './order-pricing/order-pricing.module';
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
     DatabaseModule,
     JwtAuthModule,
-    EventsModule,
+    EventPublisherModule,
     DiscountModule,
     HealthModule,
     MenuModule,

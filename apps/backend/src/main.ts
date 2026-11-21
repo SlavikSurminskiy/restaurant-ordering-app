@@ -1,17 +1,13 @@
-import { Logger, RequestMethod } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 
-import { INTERNAL_EVENTS_PATH } from '@restaurant/shared-api-types';
-
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    // Open SSE streams keep sockets alive; without this, shutdown waits for them.
-    forceCloseConnections: true,
     bodyParser: false,
   });
 
@@ -19,10 +15,7 @@ async function bootstrap() {
 
   const globalPrefix = 'api';
 
-  // Service-to-service routes stay outside /api, which is the only prefix routed from outside.
-  app.setGlobalPrefix(globalPrefix, {
-    exclude: [{ path: INTERNAL_EVENTS_PATH, method: RequestMethod.POST }],
-  });
+  app.setGlobalPrefix(globalPrefix);
   app.enableShutdownHooks();
   app.use(cookieParser());
 

@@ -10,6 +10,7 @@
 #   postgres, backend Secrets created by hand (docs/deployment.md, step 4)
 #   db                host name = the Service from 02-postgres.yaml
 #   menu-service      host name = the Service from 09-menu-service.yaml (prices for new orders)
+#   realtime-gateway  host name = the Service from 10-realtime-gateway.yaml (order events)
 
 # Non-secret settings. Values are always strings. Changing them does not restart running pods:
 # run `kubectl -n restaurant rollout restart deployment backend` afterwards.
@@ -22,6 +23,8 @@ data:
   ORDER_STATUS_STEP_SECONDS: '20'
   # Where orders asks for prices, availability and the discount while placing an order.
   MENU_SERVICE_URL: http://menu-service:3002
+  # Where order events go; the gateway streams them to browsers over SSE.
+  EVENTS_URL: http://realtime-gateway:3003
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -53,7 +56,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: api
-          image: ghcr.io/slaviksurminskiy/restaurant-backend:cd2e9c9
+          image: ghcr.io/slaviksurminskiy/restaurant-backend:fd7de0d
           ports:
             - name: http
               containerPort: 3000

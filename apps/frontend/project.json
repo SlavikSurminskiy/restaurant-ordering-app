@@ -64,7 +64,8 @@
       "dependsOn": [
         "backend:serve",
         "auth-service:serve",
-        "menu-service:serve"
+        "menu-service:serve",
+        "realtime-gateway:serve"
       ],
       "options": {
         "proxyConfig": "apps/frontend/proxy.conf.mjs",

@@ -8,6 +8,7 @@ import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
 import { RequestUser } from '@restaurant/backend-auth';
+import { EventPublisher } from '@restaurant/backend-events';
 import { Prisma, PrismaErrorCode, PrismaService } from '@restaurant/database';
 import {
   OrderConflictReason,
@@ -17,8 +18,6 @@ import {
   PricedDish,
   UserRole,
 } from '@restaurant/shared-api-types';
-
-import { EventBus } from '../events/event-bus/event-bus';
 
 import { MenuClient } from './menu-client/menu-client.service';
 import { ORDER_INCLUDE, OrderRecord } from './orders.constants';
@@ -90,7 +89,7 @@ describe(OrdersService.name, () => {
       });
 
       expect(order).toEqual(toOrder(Arrange.createRecord()));
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: OrderEventType.Created,
         order,
       });
@@ -109,7 +108,7 @@ describe(OrdersService.name, () => {
 
       expect(order).toEqual(toOrder(Arrange.createRecord()));
       expect(spies.menuClientMock.getPricing).not.toHaveBeenCalled();
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
 
     it('should answer 409 with the conflicts and order nothing', async () => {
@@ -136,7 +135,7 @@ describe(OrdersService.name, () => {
         ],
       });
       expect(spies.prismaMock.order.create).not.toHaveBeenCalled();
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
 
     it('should order nothing when the menu is unavailable', async () => {
@@ -152,7 +151,7 @@ describe(OrdersService.name, () => {
         }),
       ).rejects.toBeInstanceOf(ServiceUnavailableException);
       expect(spies.prismaMock.order.create).not.toHaveBeenCalled();
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
 
     it('should return the order of a request that raced with the same key', async () => {
@@ -170,7 +169,7 @@ describe(OrdersService.name, () => {
       });
 
       expect(order).toEqual(toOrder(Arrange.createRecord()));
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
   });
 
@@ -215,7 +214,7 @@ describe(OrdersService.name, () => {
         data: { status: OrderStatus.Ready },
         include: ORDER_INCLUDE,
       });
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: OrderEventType.Updated,
         order,
       });
@@ -257,7 +256,7 @@ describe(OrdersService.name, () => {
       await expect(
         service.updateStatus('o-1', OrderStatus.Ready),
       ).rejects.toBeInstanceOf(ConflictException);
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
   });
 
@@ -295,7 +294,7 @@ describe(OrdersService.name, () => {
           data: { status: OrderStatus.Completed },
         }),
       );
-      expect(spies.eventBusMock.publish).toHaveBeenCalledTimes(2);
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledTimes(2);
     });
 
     it('should skip an order an admin moved meanwhile', async () => {
@@ -311,7 +310,7 @@ describe(OrdersService.name, () => {
       await expect(service.advanceStatuses(new Date(), 20_000)).resolves.toBe(
         0,
       );
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
   });
 });
@@ -320,7 +319,7 @@ interface Spies {
   prismaMock: {
     order: { create: Mock; findUnique: Mock; findMany: Mock; update: Mock };
   };
-  eventBusMock: { publish: Mock };
+  eventPublisherMock: { publish: Mock };
   menuClientMock: { getPricing: Mock };
 }
 
@@ -330,7 +329,7 @@ const Arrange = {
       providers: [
         OrdersService,
         { provide: PrismaService, useValue: spies.prismaMock },
-        { provide: EventBus, useValue: spies.eventBusMock },
+        { provide: EventPublisher, useValue: spies.eventPublisherMock },
         { provide: MenuClient, useValue: spies.menuClientMock },
         OrderStatusService,
         OrderConflictsService,
@@ -350,7 +349,7 @@ const Arrange = {
           update: vi.fn().mockResolvedValue(Arrange.createRecord()),
         },
       },
-      eventBusMock: { publish: vi.fn() },
+      eventPublisherMock: { publish: vi.fn().mockResolvedValue(undefined) },
       menuClientMock: {
         getPricing: vi
           .fn()

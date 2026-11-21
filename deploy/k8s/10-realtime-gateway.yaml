@@ -1,0 +1,83 @@
+# Realtime gateway: the SSE stream for browsers (GET /api/events) and the endpoint other services
+# send events to (POST /internal/events). A pod and an in-cluster address for it.
+#   kubectl apply -f deploy/k8s/10-realtime-gateway.yaml
+#
+# Names in this file and how they are linked:
+#   realtime-gateway  Deployment name and Service name; the Ingress (07-ingress.yaml) sends
+#                     /api/events here, the backend and menu-service POST events to it (EVENTS_URL)
+#   role: realtime    label; it only has to be the same in the three places marked [L]
+#   http              port name; the Service's targetPort and the probes refer to it
+#   backend           Secret created by hand (docs/deployment.md, step 4); JWT_SECRET reads the
+#                     user from the cookie, so order events go only to their owner and to admins
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realtime-gateway
+  namespace: restaurant
+  annotations:
+    # After the migrate Job (wave 1), with the other services; before the Ingress (wave 3).
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  # Exactly one: the event bus is in the process memory, and an event reaches only the pod that
+  # received its POST. Several replicas need a shared bus (docs/microservices.md, stage B).
+  replicas: 1
+  # Not RollingUpdate: with an old and a new pod side by side, an event goes to only one of them,
+  # and clients already on the other one would miss it for good. With Recreate every client
+  # disconnects at once and reloads its snapshot on reconnect.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      role: realtime # [L] which pods this Deployment owns
+  template:
+    metadata:
+      labels:
+        role: realtime # [L] the label every created pod gets
+    spec:
+      # Without it Kubernetes adds REALTIME_GATEWAY_PORT=tcp://<ip>:3003 for the Service
+      # `realtime-gateway`, the same variable the app reads as its port (see 04-backend.yaml).
+      enableServiceLinks: false
+      containers:
+        - name: realtime
+          image: ghcr.io/slaviksurminskiy/restaurant-realtime-gateway:fd7de0d
+          ports:
+            - name: http
+              containerPort: 3003
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            failureThreshold: 3
+          # No database, but every open stream holds a socket and a subscription in memory.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: realtime-gateway
+  namespace: restaurant
+spec:
+  selector:
+    role: realtime # [L] sends traffic to the ready pod with this label
+  ports:
+    - name: http
+      port: 3003
+      targetPort: http

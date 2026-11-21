@@ -9,7 +9,8 @@
 #   http                 port name; the Service's targetPort and the probes refer to it
 #   postgres, backend    Secrets created by hand (docs/deployment.md, step 4); JWT_SECRET verifies
 #                        the admin's cookie on menu changes
-#   db, backend          host names = the Services from 02-postgres.yaml and 04-backend.yaml
+#   db                   host name = the Service from 02-postgres.yaml
+#   realtime-gateway     host name = the Service from 10-realtime-gateway.yaml (EVENTS_URL)
 
 # Non-secret settings. Changing them does not restart running pods:
 # run `kubectl -n restaurant rollout restart deployment menu-service` afterwards.
@@ -20,8 +21,8 @@ metadata:
   namespace: restaurant
 data:
   ORDER_DISCOUNT: '500'
-  # Where menu changes go as events; the backend streams them to browsers over SSE.
-  EVENTS_URL: http://backend:3000
+  # Where menu changes go as events; the gateway streams them to browsers over SSE.
+  EVENTS_URL: http://realtime-gateway:3003
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -48,7 +49,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: menu
-          image: ghcr.io/slaviksurminskiy/restaurant-menu-service:cd2e9c9
+          image: ghcr.io/slaviksurminskiy/restaurant-menu-service:fd7de0d
           ports:
             - name: http
               containerPort: 3002

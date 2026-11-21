@@ -19,4 +19,4 @@ import { DEFAULT_EVENTS_URL, PUBLISH_TIMEOUT_MS } from './events.constants';
   providers: [EventPublisher],
   exports: [EventPublisher],
 })
-export class EventsModule {}
+export class EventPublisherModule {}

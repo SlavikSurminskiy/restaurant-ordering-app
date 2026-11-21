@@ -3,10 +3,10 @@ import { Test } from '@nestjs/testing';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
+import { EventPublisher } from '@restaurant/backend-events';
 import { Prisma, PrismaErrorCode, PrismaService } from '@restaurant/database';
 import { Category, MenuEventType } from '@restaurant/shared-api-types';
 
-import { EventPublisher } from '../../events/event-publisher';
 import { CATEGORY_SELECT } from '../menu.constants';
 
 import { CategoriesService } from './categories.service';

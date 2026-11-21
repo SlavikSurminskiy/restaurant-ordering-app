@@ -5,12 +5,14 @@
 ```
 apps/
   frontend/      Angular: standalone, signals, zoneless, OnPush, Material + CDK, NgRx SignalStore
-  backend/       NestJS: REST, @Sse(), Guards, EventBus (in-memory, RxJS)
+  backend/       NestJS: orders, the order-status timer, Guards
   auth-service/  NestJS: login, logout, me; signs the JWT cookie
-  menu-service/  NestJS: menu, categories, dishes, discount; sends menu events to the backend
+  menu-service/  NestJS: menu, categories, dishes, discount; sends menu events to the gateway
+  realtime-gateway/  NestJS: @Sse(), EventBus (in-memory, RxJS); no database
 libs/
   backend/
     auth/        JwtAuthModule, guards, decorators: JWT verification for every backend service
+    events/      EventPublisher: POST events to the gateway
   shared/
     api-types/   API types shared by frontend and backend: DTOs, contracts, event payloads
   database/      Prisma schema, migrations, PrismaService, seed — backend only
@@ -18,11 +20,12 @@ docker-compose.yml   PostgreSQL
 ```
 
 ```
-apps/frontend ──REST + SSE──► apps/backend
+apps/frontend ──REST────────► apps/backend
+apps/frontend ──SSE /api/events──► apps/realtime-gateway
 apps/frontend ──/api/auth────► apps/auth-service
 apps/frontend ──/api/menu, /api/discount──► apps/menu-service
 apps/backend  ──POST /internal/order-pricing──► apps/menu-service
-apps/menu-service ──POST /internal/events──► apps/backend (EventBus → SSE)
+apps/menu-service, apps/backend ──POST /internal/events──► apps/realtime-gateway (EventBus → SSE)
 apps/backend, apps/auth-service, apps/menu-service ──► libs/backend/auth
 apps/frontend ──► libs/shared/api-types ◄── apps/backend
 apps/backend, apps/auth-service, apps/menu-service ──► libs/database ──Prisma Client──► PostgreSQL
@@ -34,11 +37,13 @@ apps/backend, apps/auth-service, apps/menu-service ──► libs/database ─�
 | `backend`          | `apps/backend`          | —                              |
 | `auth-service`     | `apps/auth-service`     | —                              |
 | `menu-service`     | `apps/menu-service`     | —                              |
+| `realtime-gateway` | `apps/realtime-gateway` | —                              |
+| `backend-events`   | `libs/backend/events`   | `@restaurant/backend-events`   |
 | `backend-auth`     | `libs/backend/auth`     | `@restaurant/backend-auth`     |
 | `shared-api-types` | `libs/shared/api-types` | `@restaurant/shared-api-types` |
 | `database`         | `libs/database`         | `@restaurant/database`         |
 
-`pnpm start` runs `nx serve frontend`. That task first starts `backend:serve`, `auth-service:serve` and `menu-service:serve`; each builds its app (generating the Prisma Client) and runs `database:prisma-seed`. The seed depends on `prisma-migrate-deploy`, which depends on `postgres-up` (`docker compose up -d --wait`). So one command starts PostgreSQL, applies migrations, seeds the database and only then starts the servers. Every database target that needs a running database (`prisma-migrate`, `prisma-migrate-deploy`, `prisma-reset`, `prisma-studio`) also depends on `postgres-up`.
+`pnpm start` runs `nx serve frontend`. That task first starts `backend:serve`, `auth-service:serve`, `menu-service:serve` and `realtime-gateway:serve`; each builds its app (generating the Prisma Client) and runs `database:prisma-seed`. The seed depends on `prisma-migrate-deploy`, which depends on `postgres-up` (`docker compose up -d --wait`). So one command starts PostgreSQL, applies migrations, seeds the database and only then starts the servers. Every database target that needs a running database (`prisma-migrate`, `prisma-migrate-deploy`, `prisma-reset`, `prisma-studio`) also depends on `postgres-up`.
 
 ## Module boundaries
 
@@ -54,15 +59,15 @@ The frontend cannot import `@restaurant/database`: lint fails if it does. Prisma
 
 ## Real-time events (SSE)
 
-`GET /api/events` is a Server-Sent Events stream (`apps/backend/src/app/events/`):
+`GET /api/events` is a Server-Sent Events stream served by realtime-gateway (`apps/realtime-gateway/src/app/events/`):
 
-- `EventBus` is an in-memory RxJS `Subject`, provided by the global `EventsModule`. Feature services inject it and call `publish(event)` only after a successful write.
-- Clients receive events in the order they were published: `publish()` is synchronous, and each client has one ordered stream. So publish synchronously after the transaction commits and before returning the response, never before the commit or in the background. Combined with foreign keys (a dish needs a committed category; a category with dishes can't be deleted), this guarantees that `menu.category.upserted` arrives before the dishes of that category, and `menu.dish.deleted` before `menu.category.deleted`. When one request changes several entities, publish parents before children.
+- `EventBus` is an in-memory RxJS `Subject` in the gateway. Services publish to it with `EventPublisher` (`@restaurant/backend-events`): an awaited `POST /internal/events`, called only after a successful write.
+- Clients receive events in the order they were published: `publish()` waits until the gateway has the event, and each client has one ordered stream. So publish synchronously after the transaction commits and before returning the response, never before the commit or in the background. Combined with foreign keys (a dish needs a committed category; a category with dishes can't be deleted), this guarantees that `menu.category.upserted` arrives before the dishes of that category, and `menu.dish.deleted` before `menu.category.deleted`. When one request changes several entities, publish parents before children.
 - Events are not stored: a client gets only events published while it is connected. So a client opens the stream first and buffers events, then loads the snapshot (`GET /api/menu`, `GET /api/orders`), then applies the buffer on top; it repeats this after every reconnect. On the frontend `LiveResourceFactoryService` (`shared/domain/sse`) does this for `MenuDomainService.streamMenu()` and `OrdersDomainService.streamOrders()`; all of them share one connection, which `SseDataAccessService` opens for the first subscriber and closes after the last one. Events carry no version, so this order is what keeps an older snapshot from overwriting a newer event.
 - Event payloads are the `ServerEvent` union in `libs/shared/api-types/src/lib/events.ts`, discriminated by `type`; the type names live in the `MenuEventType` enum (`menu.category.upserted`, `menu.dish.deleted`, …), so code never spells them as strings. Each is sent as the `data` of a default `message` event, so the client needs one `onmessage` handler. `*.upserted` events carry the full entity, not a diff.
 - Every 20 s the stream sends an SSE comment (`: heartbeat`), which `EventSource` ignores. It keeps idle connections from being dropped by proxies; the Angular dev proxy passes the stream through without buffering.
-- On shutdown `EventBus` completes, which ends open streams, and the backend is created with `forceCloseConnections`, so `app.close()` doesn't wait for keep-alive sockets of connected clients.
-- `menu.*` events are published by the admin menu endpoints in menu-service (`apps/menu-service/src/app/menu/categories/`, `dishes/`) through `EventPublisher`: an awaited `POST /internal/events` to the backend, which puts them on its `EventBus`; they go to every client. Awaiting it keeps the order rule above across the two processes. A failed send is logged, not thrown: the change is committed, and a client that missed it reloads the snapshot when its stream reconnects. `order.*` events are published by `apps/backend/src/app/orders/` and go only to the order's owner and to admins. `EventsService` does this filtering with a `switch` over every event type, so a new type does not compile until it is handled; the stream reads the auth cookie once on connect, which is why clients reconnect after login and logout.
+- On shutdown `EventBus` completes, which ends open streams, and the gateway is created with `forceCloseConnections`, so `app.close()` doesn't wait for keep-alive sockets of connected clients.
+- `menu.*` events are published by the admin menu endpoints in menu-service (`apps/menu-service/src/app/menu/categories/`, `dishes/`) through `EventPublisher` and go to every client. A failed send is logged, not thrown: the change is committed, and a client that missed it reloads the snapshot when its stream reconnects. `order.*` events are published by `apps/backend/src/app/orders/` (also through `EventPublisher`) and go only to the order's owner and to admins. `EventsService` does this filtering with a `switch` over every event type, so a new type does not compile until it is handled; the stream reads the auth cookie once on connect, which is why clients reconnect after login and logout.
 
 ## Environment variables
 

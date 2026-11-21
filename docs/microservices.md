@@ -1,6 +1,6 @@
 # Microservices
 
-A plan in progress: `auth-service` and `menu-service` are cut out and deployed (one shared database for now); the rest is not built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
+A plan in progress: `auth-service`, `menu-service` and `realtime-gateway` are cut out and deployed (one shared database for now); the rest is not built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
 
 Two stages, in this order on purpose:
 
@@ -66,7 +66,7 @@ The shared instance is a conscious compromise: shared resources and one point of
 1. **Foreign keys across services.** `Order.userId` and `OrderItem.dishId` become plain UUIDs; the code, not the database, keeps them valid. A deleted dish leaves a dangling `dishId` (today `SetNull`); clean it up by event in stage B or accept it.
 2. **409 check without one transaction.** `orders-service` asks `menu-service` over HTTP, and a price can change between the check and the insert. **Chosen:** the window is accepted; the price the menu confirmed during the request is what the order keeps.
 3. **Synchronous `orders → menu` call.** **Chosen:** `MenuClient` calls `POST /internal/order-pricing` with a 3 s timeout and no retries; any failure is `503`, and the checkout retries with the same `Idempotency-Key`. One service's failure becomes another's.
-4. **Events over HTTP.** `menu-service` and `orders-service` `POST /internal/events` to the gateway: when the gateway is down, the event is lost; with two gateway replicas, only one gets it. Stage B fixes both. **For now** the backend is the receiver (`POST /internal/events` → `EventBus`); a lost event costs nothing while the backend is down, because its SSE clients reconnect and reload the snapshot.
+4. **Events over HTTP.** `menu-service` and `orders-service` `POST /internal/events` to the gateway: when the gateway is down, the event is lost; with two gateway replicas, only one gets it. Stage B fixes both. **Chosen for stage A:** `EventPublisher` (`libs/backend/events`) awaits the POST, logs a failure and does not throw. A lost event costs nothing while the gateway is down, because its SSE clients reconnect and reload the snapshot; the gateway runs one replica with `strategy: Recreate`, so all clients reconnect together.
 5. **Routing.** `/api/*` moves from the frontend's nginx to path rules in the Traefik Ingress; locally `apps/frontend/proxy.conf.mjs` gets one target per path.
 6. **Moving prod data.** Tables move into schemas with `ALTER TABLE ... SET SCHEMA`, plus one database user per service with grants on its schema only: hand-written SQL, so a separate migration and commit (see [architecture.md](architecture.md)).
 7. **Local start.** Nx starts four backends on separate ports; the `serve` chain with `readyWhen: signal` grows accordingly.
@@ -97,6 +97,22 @@ Stage B:
 7. Gateway reads Kafka instead of HTTP; two replicas of `orders-service`.
 8. `kitchen-service` takes over the status timer.
 9. Optional: menu projection in `orders-service`.
+
+## Later: build and deploy only what changed
+
+Postponed until every service in this plan is cut out; then the set of images is stable.
+
+**Today** every merge to `main` that touches code builds all images (a static matrix in `images.yml`; the layer cache makes unchanged ones fast, but they are still built and pushed), and the `deploy` job writes the new commit tag into every `image:` line. Argo CD compares only manifest text, not image contents, so it sees every Deployment changed and restarts all pods. Consequences:
+
+- A change in one service restarts the others. The backend runs with `strategy: Recreate`, so each merge gives it a few seconds without a pod: SSE clients reconnect, and service-to-service calls to it fail meanwhile (seen after #27: menu-service got a connect timeout to `backend:3000` during that window).
+- The tag says which commit built the image, not when the service last changed.
+
+**Plan:**
+
+- A first job lists the affected projects with `nx show projects --affected`, with the base from `nrwl/nx-set-shas`: the last **successful** run on `main`, so a failed build is retried by the next merge. The build matrix is made from that list; the `migrate` image follows `libs/database`.
+- The `deploy` job rewrites only the tags of the images it built; Argo CD then restarts only those Deployments.
+- Nx's project graph decides what is affected: a change in `libs/shared/api-types` rebuilds the backend services and the frontend, one in `libs/backend/auth` only the backend services.
+- Alternative: tag images by content (the Nx task hash or the image digest) instead of the commit, so a rebuilt but unchanged image keeps its tag. More robust, but the tag no longer points to a commit.
 
 ## Resources
 
