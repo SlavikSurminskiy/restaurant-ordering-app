@@ -4,7 +4,7 @@
 #
 # Names in this file and how they are linked:
 #   realtime-gateway  Deployment name and Service name; the Ingress (07-ingress.yaml) sends
-#                     /api/events here, the backend and menu-service POST events to it (EVENTS_URL)
+#                     /api/events here, orders-service and menu-service POST events to it (EVENTS_URL)
 #   role: realtime    label; it only has to be the same in the three places marked [L]
 #   http              port name; the Service's targetPort and the probes refer to it
 #   backend           Secret created by hand (docs/deployment.md, step 4); JWT_SECRET reads the
@@ -35,7 +35,7 @@ spec:
         role: realtime # [L] the label every created pod gets
     spec:
       # Without it Kubernetes adds REALTIME_GATEWAY_PORT=tcp://<ip>:3003 for the Service
-      # `realtime-gateway`, the same variable the app reads as its port (see 04-backend.yaml).
+      # `realtime-gateway`, the same variable the app reads as its port (see 04-orders-service.yaml).
       enableServiceLinks: false
       containers:
         - name: realtime

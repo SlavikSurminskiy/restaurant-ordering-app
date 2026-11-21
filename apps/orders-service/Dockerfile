@@ -1,5 +1,5 @@
-# Backend image. Build from the repository root:
-#   docker build -f apps/backend/Dockerfile -t restaurant-backend .
+# Orders service image. Build from the repository root:
+#   docker build -f apps/orders-service/Dockerfile -t restaurant-orders-service .
 
 FROM node:24-slim AS build
 WORKDIR /repo
@@ -12,7 +12,7 @@ RUN corepack enable
 # Manifests first: this layer is rebuilt only when dependencies change, not on every code change.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/auth-service/package.json apps/auth-service/
-COPY apps/backend/package.json apps/backend/
+COPY apps/orders-service/package.json apps/orders-service/
 COPY apps/frontend/package.json apps/frontend/
 COPY apps/menu-service/package.json apps/menu-service/
 COPY apps/realtime-gateway/package.json apps/realtime-gateway/
@@ -27,7 +27,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts --store-dir /pnpm/store
 
 COPY . .
-RUN pnpm nx run backend:prepare-deploy
+RUN pnpm nx run orders-service:prepare-deploy
 
 
 FROM node:24-slim AS runtime
@@ -36,7 +36,7 @@ ENV NODE_ENV=production \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 
-COPY --from=build /repo/dist/apps/backend/package.json /repo/dist/apps/backend/pnpm-lock.yaml /repo/dist/apps/backend/pnpm-workspace.yaml ./
+COPY --from=build /repo/dist/apps/orders-service/package.json /repo/dist/apps/orders-service/pnpm-lock.yaml /repo/dist/apps/orders-service/pnpm-workspace.yaml ./
 # --no-optional skips optional dependencies and optional peers. The lockfile comes from the
 # monorepo, where pnpm linked the optional peers `prisma` (CLI with Studio and React) and
 # `typescript` to @prisma/client; unused at runtime, they are most of node_modules.
@@ -47,7 +47,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     --mount=type=cache,id=pnpm-metadata,target=/root/.cache/pnpm \
     --mount=type=cache,id=corepack,target=/root/.cache/node/corepack \
     pnpm install --prod --frozen-lockfile --no-optional --store-dir /pnpm/store
-COPY --from=build /repo/dist/apps/backend/main.js ./
+COPY --from=build /repo/dist/apps/orders-service/main.js ./
 
 USER node
 EXPOSE 3000

@@ -1,6 +1,6 @@
 # Restaurant Ordering
 
-A real-time restaurant ordering prototype: an Nx monorepo with an Angular 22 frontend, a NestJS 11 backend and PostgreSQL via Prisma 7.
+A real-time restaurant ordering prototype: an Nx monorepo with an Angular 22 frontend, NestJS 11 backend services and PostgreSQL via Prisma 7.
 
 - **Menu setup** (admins): categories and dishes, prices, availability and open-price dishes; every change reaches open menus immediately.
 - **Menu and cart:** a large virtualized menu, quantities, prices entered for open-price dishes, a fixed discount, and a checkout that never places an order twice and warns about menu changes first.
@@ -13,10 +13,10 @@ Requirements: Node.js 24+, pnpm 11, Docker (running).
 ```bash
 pnpm install    # dependencies + Prisma Client
 pnpm env:init   # .env from .env.example (keeps an existing .env)
-pnpm start      # PostgreSQL → migrations → seed → backend + auth-service + menu-service + realtime-gateway + frontend
+pnpm start      # PostgreSQL → migrations → seed → orders-service + auth-service + menu-service + realtime-gateway + frontend
 ```
 
-Open http://localhost:4200 (the API is on http://localhost:3000/api, auth on :3001, menu on :3002, events on :3003). Seeded users for local development:
+Open http://localhost:4200 (the services: orders on http://localhost:3000/api, auth on :3001, menu on :3002, events on :3003). Seeded users for local development:
 
 | Email                  | Password      | Role     |
 | ---------------------- | ------------- | -------- |

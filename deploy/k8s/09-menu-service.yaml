@@ -4,7 +4,7 @@
 # Names in this file and how they are linked:
 #   menu-service-config  ConfigMap name; the Deployment loads all its keys as env variables
 #   menu-service         Deployment name and Service name; the Ingress (07-ingress.yaml) sends
-#                        /api/menu and /api/discount here, the backend calls /internal/order-pricing
+#                        /api/menu and /api/discount here, orders-service calls /internal/order-pricing
 #   role: menu           label; it only has to be the same in the three places marked [L]
 #   http                 port name; the Service's targetPort and the probes refer to it
 #   postgres, backend    Secrets created by hand (docs/deployment.md, step 4); JWT_SECRET verifies
@@ -45,7 +45,7 @@ spec:
         role: menu # [L] the label every created pod gets
     spec:
       # Without it Kubernetes adds MENU_SERVICE_PORT=tcp://<ip>:3002 for the Service
-      # `menu-service`, the same variable the app reads as its port (see 04-backend.yaml).
+      # `menu-service`, the same variable the app reads as its port (see 04-orders-service.yaml).
       enableServiceLinks: false
       containers:
         - name: menu

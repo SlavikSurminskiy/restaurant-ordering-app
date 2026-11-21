@@ -1,6 +1,6 @@
 # Microservices
 
-A plan in progress: `auth-service`, `menu-service` and `realtime-gateway` are cut out and deployed (one shared database for now); the rest is not built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
+A plan in progress: stage A has split the monolith into `auth-service`, `menu-service`, `realtime-gateway` and `orders-service` (one shared database for now); data ownership (schemas, database users) and stage B are not built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
 
 Two stages, in this order on purpose:
 
@@ -9,7 +9,7 @@ Two stages, in this order on purpose:
 
 ## Today
 
-`apps/backend` modules: `auth`, `menu` (categories, dishes), `discount`, `orders` (conflicts, status, status timer), `events` (SSE and the in-memory `EventBus`), `health`. One Prisma schema in `libs/database`.
+Before the split, `apps/backend` modules: `auth`, `menu` (categories, dishes), `discount`, `orders` (conflicts, status, status timer), `events` (SSE and the in-memory `EventBus`), `health`. One Prisma schema in `libs/database`.
 
 Links across future service boundaries:
 
@@ -104,7 +104,7 @@ Postponed until every service in this plan is cut out; then the set of images is
 
 **Today** every merge to `main` that touches code builds all images (a static matrix in `images.yml`; the layer cache makes unchanged ones fast, but they are still built and pushed), and the `deploy` job writes the new commit tag into every `image:` line. Argo CD compares only manifest text, not image contents, so it sees every Deployment changed and restarts all pods. Consequences:
 
-- A change in one service restarts the others. The backend runs with `strategy: Recreate`, so each merge gives it a few seconds without a pod: SSE clients reconnect, and service-to-service calls to it fail meanwhile (seen after #27: menu-service got a connect timeout to `backend:3000` during that window).
+- A change in one service restarts the others. orders-service and the gateway run with `strategy: Recreate`, so each merge gives them a few seconds without a pod: SSE clients reconnect, and service-to-service calls to them fail meanwhile (seen after #27: menu-service got a connect timeout to `backend:3000` during that window).
 - The tag says which commit built the image, not when the service last changed.
 
 **Plan:**
@@ -118,6 +118,6 @@ Postponed until every service in this plan is cut out; then the set of images is
 
 The scheduler places pods by their **requests**, not by real use. Each node (1 OCPU, 6 GB) offers 840m CPU and about 4.3 GiB to pods; on 2026-11-21 the pods requested 740m + 580m CPU and 1.4 + 1.0 GiB memory. **CPU requests are the limit, not memory**: OKE's own pods (flannel, CoreDNS, CSI, agents) take about 300m per node.
 
-- **Stage A fits.** `auth-service`, `menu-service` and `realtime-gateway` at about 50m CPU and 192 MiB each, one replica each; the backend's 250m stays with `orders-service`. The real use of the backend is about 180 MiB and almost no CPU, so its request can go down too.
+- **Stage A fits.** `auth-service`, `menu-service` and `realtime-gateway` at about 50m CPU and 192 MiB each, one replica each; the old backend's 250m stays with `orders-service`. The real use of the backend is about 180 MiB and almost no CPU, so its request can go down too.
 - **Stage B does not fit as is.** Strimzi with one KRaft broker needs about 1–1.5 GB and a few hundred millicores. Options: lower the requests to real use, or grow the node pool to 2 OCPU and 12 GB per node in `deploy/terraform/oke.tf` (still within Always Free: 4 OCPU and 24 GB in total; new shapes apply to new nodes, so the nodes are replaced), or Aiven instead of an in-cluster broker.
 - Several replicas of a stateless service (for a node failure) cost one more request each; add them after the node pool grows.

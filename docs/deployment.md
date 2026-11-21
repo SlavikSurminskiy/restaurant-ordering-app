@@ -8,9 +8,9 @@ Steps 1–6 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) 
 | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /api/events` is a long-lived SSE stream                                                             | No platforms with short request timeouts or buffering rewrites (Vercel/Netlify rewrites). Every proxy on the path must not buffer `/api/events`.   |
 | `EventBus` is in memory (realtime-gateway), and order statuses advance on an in-process timer (backend)  | Exactly **one** replica of each until the bus is shared (see [step 8](#8-several-backend-replicas)). Scale-to-zero platforms also pause the timer. |
-| The frontend calls `/api` on its own origin (`proxy.conf.mjs` in development)                            | Serve frontend and API from one origin: nginx in front of the backend, so no CORS and the `lax` auth cookie keeps working.                         |
+| The frontend calls `/api` on its own origin (`proxy.conf.mjs` in development)                            | Serve frontend and API from one origin: Traefik routes `/` and `/api/*` by path, so no CORS and the `lax` auth cookie keeps working.               |
 | The auth cookie is `Secure` only when `NODE_ENV=production`                                              | Deployed environments set `NODE_ENV=production` and serve over HTTPS.                                                                              |
-| `prisma migrate deploy` and the seed need the Prisma CLI, `prisma.config.ts` and the migrations          | The runtime image (`dist/apps/backend`) does not have them; migrations run from a separate image as a release step.                                |
+| `prisma migrate deploy` and the seed need the Prisma CLI, `prisma.config.ts` and the migrations          | The runtime images (`dist/apps/<service>`) do not have them; migrations run from a separate image as a release step.                               |
 | The seed creates demo users with known passwords, including an admin, and resets demo orders on each run | A public deployment must not run the development seed as is (see [open questions](#open-questions)).                                               |
 
 ## Platform options
@@ -27,12 +27,12 @@ Steps 1–6 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) 
 
 ### 1. Container images
 
-- `apps/backend/Dockerfile`, multi-stage: `pnpm install --frozen-lockfile` → `nx run backend:prepare-deploy` → runtime stage on `node:24-slim` with `main.js`, `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` from `dist/apps/backend` and `pnpm install --prod --frozen-lockfile`, a non-root user, `NODE_ENV=production`. See [architecture.md](architecture.md#deploy-output).
+- `apps/orders-service/Dockerfile`, multi-stage: `pnpm install --frozen-lockfile` → `nx run orders-service:prepare-deploy` → runtime stage on `node:24-slim` with `main.js`, `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` from `dist/apps/orders-service` and `pnpm install --prod --frozen-lockfile`, a non-root user, `NODE_ENV=production`. See [architecture.md](architecture.md#deploy-output).
 - `apps/auth-service/Dockerfile`, `apps/menu-service/Dockerfile` and `apps/realtime-gateway/Dockerfile`: the same with their own `prepare-deploy` and ports 3001, 3002 and 3003.
-- `apps/frontend/Dockerfile`: `nx build frontend` → `nginx` serving the static files with an SPA fallback to `index.html`, and proxying the rest of `/api` to the backend service; the paths of the other services, `/api/events` among them, are routed by Traefik before nginx.
+- `apps/frontend/Dockerfile`: `nx build frontend` → `nginx` serving the static files with an SPA fallback to `index.html`, and `404` for any `/api` path: Traefik routes every service path before nginx.
 - `libs/database/Dockerfile`: a migrate image with only the Prisma CLI (root `package.json` version), `libs/database/prisma` and `prisma.config.ts`; its command is `prisma migrate deploy`.
 - `.dockerignore`: `node_modules`, `dist`, `.nx`, `.env*`, `libs/database/src/generated`.
-- Check: `docker-compose.prod.yml` runs Postgres → migrate → backend and the services → frontend locally behind Traefik on http://localhost:8080 ([how](development.md#production-like-stack)).
+- Check: `docker-compose.prod.yml` runs Postgres → migrate → the services → frontend locally behind Traefik on http://localhost:8080 ([how](development.md#production-like-stack)).
 
 ### 2. CI: images to a registry
 
@@ -40,7 +40,7 @@ Steps 1–6 are in place: the app is deployed to OKE (Oracle Kubernetes Engine) 
 
 - Runs on pull requests, on pushes to `main` and manually (`workflow_dispatch`); changes only to docs, Markdown or `deploy/` don't trigger it.
 - Builds the six images for `linux/arm64` only (Oracle A1 is ARM) on an ARM runner (`ubuntu-24.04-arm`, free for public repositories), so nothing runs under QEMU. They don't run on amd64 nodes; adding `linux/amd64` later means QEMU with `FROM --platform=$BUILDPLATFORM` for the build stages, or a build per platform joined into one multi-arch tag.
-- Pushes to `ghcr.io/slaviksurminskiy/restaurant-{backend,auth-service,menu-service,realtime-gateway,frontend,migrate}` with the built-in `GITHUB_TOKEN`, tagged with the short SHA of the commit (for a PR, its last commit, not GitHub's merge commit), plus `main` on the main branch. The packages are public, so the cluster pulls them without credentials. GHCR creates a new package as private on its first push: make it public in the package settings before a manifest uses it, or the pods get `ImagePullBackOff`.
+- Pushes to `ghcr.io/slaviksurminskiy/restaurant-{orders-service,auth-service,menu-service,realtime-gateway,frontend,migrate}` with the built-in `GITHUB_TOKEN`, tagged with the short SHA of the commit (for a PR, its last commit, not GitHub's merge commit), plus `main` on the main branch. The packages are public, so the cluster pulls them without credentials. GHCR creates a new package as private on its first push: make it public in the package settings before a manifest uses it, or the pods get `ImagePullBackOff`.
 - A smoke test runs the migrate image against an empty Postgres.
 - Manifests reference images by SHA tag, never `latest`. Every environment deploys the same image; environments differ only in configuration and secrets.
 
@@ -69,16 +69,16 @@ terraform apply
 
 `deploy/k8s/`, plain YAML applied in file order with `kubectl apply -f <file>`. Each file starts with a comment that lists its names and how they link to the other files.
 
-| File                       | Resources                                                                                                                                                                     |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `01-namespace.yaml`        | `Namespace` `restaurant`                                                                                                                                                      |
-| `02-postgres.yaml`         | headless `Service` `db` + `StatefulSet` `pg-server` (Postgres 18) with a 50 GB PVC on the default `oci-bv` storage class                                                      |
-| `03-migrate-job.yaml`      | `Job` with the migrate image (`prisma migrate deploy`); no seed                                                                                                               |
-| `04-backend.yaml`          | `ConfigMap` `backend-config`, `Deployment` `backend` (`replicas: 1`, `strategy: Recreate`, probes on `/api/health`), `Service`                                                |
-| `05-frontend.yaml`         | `Deployment` + `Service` `frontend` (nginx; proxies `/api` to `backend`)                                                                                                      |
-| `08-auth-service.yaml`     | `ConfigMap` `auth-service-config`, `Deployment` `auth-service` (`replicas: 1`, `RollingUpdate`, probes on `/api/health`), `Service`; `JWT_SECRET` from the Secret `backend`   |
-| `09-menu-service.yaml`     | `ConfigMap` `menu-service-config` (`ORDER_DISCOUNT`, `EVENTS_URL`), `Deployment` `menu-service` (`replicas: 1`), `Service`; the backend reaches it through `MENU_SERVICE_URL` |
-| `10-realtime-gateway.yaml` | `Deployment` `realtime-gateway` (`replicas: 1`, `strategy: Recreate`: the bus is in memory), `Service`; the backend and menu-service reach it through `EVENTS_URL`            |
+| File                       | Resources                                                                                                                                                                        |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01-namespace.yaml`        | `Namespace` `restaurant`                                                                                                                                                         |
+| `02-postgres.yaml`         | headless `Service` `db` + `StatefulSet` `pg-server` (Postgres 18) with a 50 GB PVC on the default `oci-bv` storage class                                                         |
+| `03-migrate-job.yaml`      | `Job` with the migrate image (`prisma migrate deploy`); no seed                                                                                                                  |
+| `04-orders-service.yaml`   | `ConfigMap` `orders-service-config`, `Deployment` `orders-service` (`replicas: 1`, `strategy: Recreate`: the status timer), `Service`                                            |
+| `05-frontend.yaml`         | `Deployment` + `Service` `frontend` (nginx; static files only)                                                                                                                   |
+| `08-auth-service.yaml`     | `ConfigMap` `auth-service-config`, `Deployment` `auth-service` (`replicas: 1`, `RollingUpdate`, probes on `/api/health`), `Service`; `JWT_SECRET` from the Secret `backend`      |
+| `09-menu-service.yaml`     | `ConfigMap` `menu-service-config` (`ORDER_DISCOUNT`, `EVENTS_URL`), `Deployment` `menu-service` (`replicas: 1`), `Service`; orders-service reaches it through `MENU_SERVICE_URL` |
+| `10-realtime-gateway.yaml` | `Deployment` `realtime-gateway` (`replicas: 1`, `strategy: Recreate`: the bus is in memory), `Service`; orders-service and menu-service reach it through `EVENTS_URL`            |
 
 Secrets are not in the repository. Create them after the namespace and before `02-postgres.yaml`:
 
@@ -92,7 +92,7 @@ kubectl -n restaurant create secret generic backend --from-literal=JWT_SECRET="$
 
 A new release by hand: change the image tags in `03`–`05` and `08`–`10`, delete the finished `Job` (its template can't be changed) and apply `03`, then `05`, `08`, `09`, `10`, `07` and `04`. With Argo CD ([step 6](#6-gitops-argo-cd)) this happens on its own after every merge to `main`.
 
-Check: `kubectl -n restaurant get pods` shows `pg-server-0`, `backend-…`, `frontend-…`, `auth-service-…`, `menu-service-…` and `realtime-gateway-…` as `Running` and the migrate pod as `Completed`; `kubectl -n restaurant port-forward svc/frontend 8080:80` opens the app on http://localhost:8080.
+Check: `kubectl -n restaurant get pods` shows `pg-server-0`, `orders-service-…`, `frontend-…`, `auth-service-…`, `menu-service-…` and `realtime-gateway-…` as `Running` and the migrate pod as `Completed`; `kubectl -n restaurant port-forward svc/frontend 8080:80` opens the app on http://localhost:8080.
 
 ### 5. HTTPS: Traefik and cert-manager
 
@@ -113,13 +113,13 @@ Check: `kubectl -n restaurant get certificate` shows `READY True`; `curl -I http
 
 1. A merge to `main` → `images.yml` builds the images tagged with the short SHA and runs the migrate smoke test.
 2. Its `deploy` job replaces the tag in the `image:` lines of `deploy/k8s` with `sed` and pushes `build(deploy): images <sha>` to `main` as `github-actions[bot]`. The commit touches only `deploy/`, so `images.yml` does not run again.
-3. Argo CD polls the repository every 3 minutes, sees the new tags and syncs in waves: everything else (wave 0) → the migrate `Job` as a `Sync` hook, recreated on every sync (wave 1) → `frontend`, `auth-service`, `menu-service` and `realtime-gateway` (wave 2) → the Ingress (wave 3), so a path switches to a new service only after its pods are ready → `backend` (wave 4), which no longer has the routes that moved. A failed migration stops the sync, and the old pods keep running.
+3. Argo CD polls the repository every 3 minutes, sees the new tags and syncs in waves: everything else (wave 0) → the migrate `Job` as a `Sync` hook, recreated on every sync (wave 1) → `frontend` and the services (wave 2) → the Ingress (wave 3), so a path switches to a new service only after its pods are ready. A failed migration stops the sync, and the old pods keep running.
 
 | File                               | Purpose                                                                                                                     |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `deploy/helm/argocd-values.yaml`   | Argo CD chart without dex, notifications and the ApplicationSet controller (memory); the install command is at the top      |
 | `deploy/argocd/restaurant.yaml`    | `Application` `restaurant`: repo, `main`, `deploy/k8s` → namespace `restaurant`; automated sync with `prune` and `selfHeal` |
-| `argocd.argoproj.io/*` annotations | in `01` (the namespace is never pruned), `03` (hook, wave 1), `05`/`08`/`09`/`10` (wave 2), `07` (wave 3), `04` (wave 4)    |
+| `argocd.argoproj.io/*` annotations | in `01` (the namespace is never pruned), `03` (hook, wave 1), `04`/`05`/`08`/`09`/`10` (wave 2), `07` (wave 3)              |
 
 - Secrets created by hand and `restaurant-tls` are not in git; Argo CD did not create them, so `prune` leaves them alone.
 - `selfHeal` reverts manual `kubectl` changes to resources from `deploy/k8s`; change the files instead. To pause it, turn off auto-sync in the UI.
@@ -133,7 +133,7 @@ Check: `kubectl -n argocd get applications` shows `restaurant` as `Synced` and `
 ### 7. OpenTelemetry
 
 - Backend: `@opentelemetry/sdk-node` with auto-instrumentations for HTTP, Express, NestJS and `pg`, plus `@prisma/instrumentation`; service name and version as resource attributes; logs correlated with trace IDs.
-- **Bundling:** the backend is bundled by webpack, and auto-instrumentation patches modules through `require` hooks, which do not see bundled code. Either keep the instrumented packages external in the webpack config or start the SDK with `node --require` before the bundle; verify that spans actually appear.
+- **Bundling:** the backend services are bundled by webpack, and auto-instrumentation patches modules through `require` hooks, which do not see bundled code. Either keep the instrumented packages external in the webpack config or start the SDK with `node --require` before the bundle; verify that spans actually appear.
 - SSE: do not keep one span open for the whole stream; trace the connect and the events.
 - Frontend (later): `@opentelemetry/sdk-trace-web` with fetch instrumentation and `traceparent` propagation to `/api`.
 - Export over OTLP to an **OpenTelemetry Collector** in the cluster, then to **Grafana Cloud** (free tier) or a self-hosted `grafana/otel-lgtm` (tight on two 6 GB nodes).

@@ -4,9 +4,9 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug backend with Nx",
+      "name": "Debug orders-service with Nx",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "nx", "serve", "backend"],
+      "runtimeArgs": ["exec", "nx", "serve", "orders-service"],
       "env": {
         "NODE_OPTIONS": "--inspect=9229"
       },
@@ -15,7 +15,7 @@
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
-        "${workspaceFolder}/dist/apps/backend/**/*.js",
+        "${workspaceFolder}/dist/apps/orders-service/**/*.js",
         "!**/node_modules/**"
       ]
     },
