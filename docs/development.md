@@ -82,4 +82,4 @@ If `pnpm env:init` doesn't work, copy `.env.example` to `.env` in the project ro
 Other common issues:
 
 - `pnpm start` fails at `database:postgres-up`: Docker is not running.
-- `Port 4200 is already in use` (or 3000, 9229): a dev server from an earlier run is still alive; stop it first.
+- `Port 4200 is already in use` (or 3000, 3001, 9229, 9230): a dev server from an earlier run is still alive; stop it first.

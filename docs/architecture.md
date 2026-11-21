@@ -6,7 +6,10 @@
 apps/
   frontend/      Angular: standalone, signals, zoneless, OnPush, Material + CDK, NgRx SignalStore
   backend/       NestJS: REST, @Sse(), Guards, EventBus (in-memory, RxJS)
+  auth-service/  NestJS: login, logout, me; signs the JWT cookie
 libs/
+  backend/
+    auth/        JwtAuthModule, guards, decorators: JWT verification for every backend service
   shared/
     api-types/   API types shared by frontend and backend: DTOs, contracts, event payloads
   database/      Prisma schema, migrations, PrismaService, seed — backend only
@@ -15,18 +18,22 @@ docker-compose.yml   PostgreSQL
 
 ```
 apps/frontend ──REST + SSE──► apps/backend
+apps/frontend ──/api/auth────► apps/auth-service
+apps/backend, apps/auth-service ──► libs/backend/auth
 apps/frontend ──► libs/shared/api-types ◄── apps/backend
-apps/backend  ──► libs/database ──Prisma Client──► PostgreSQL
+apps/backend, apps/auth-service ──► libs/database ──Prisma Client──► PostgreSQL
 ```
 
 | Project            | Directory               | Import path                    |
 | ------------------ | ----------------------- | ------------------------------ |
 | `frontend`         | `apps/frontend`         | —                              |
 | `backend`          | `apps/backend`          | —                              |
+| `auth-service`     | `apps/auth-service`     | —                              |
+| `backend-auth`     | `libs/backend/auth`     | `@restaurant/backend-auth`     |
 | `shared-api-types` | `libs/shared/api-types` | `@restaurant/shared-api-types` |
 | `database`         | `libs/database`         | `@restaurant/database`         |
 
-`pnpm start` runs `nx serve frontend`. That task first starts `backend:serve`, which builds the backend (generating the Prisma Client) and runs `database:prisma-seed`. The seed depends on `prisma-migrate-deploy`, which depends on `postgres-up` (`docker compose up -d --wait`). So one command starts PostgreSQL, applies migrations, seeds the database and only then starts the servers. Every database target that needs a running database (`prisma-migrate`, `prisma-migrate-deploy`, `prisma-reset`, `prisma-studio`) also depends on `postgres-up`.
+`pnpm start` runs `nx serve frontend`. That task first starts `backend:serve` and `auth-service:serve`; each builds its app (generating the Prisma Client) and runs `database:prisma-seed`. The seed depends on `prisma-migrate-deploy`, which depends on `postgres-up` (`docker compose up -d --wait`). So one command starts PostgreSQL, applies migrations, seeds the database and only then starts the servers. Every database target that needs a running database (`prisma-migrate`, `prisma-migrate-deploy`, `prisma-reset`, `prisma-studio`) also depends on `postgres-up`.
 
 ## Module boundaries
 
