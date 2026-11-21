@@ -1,8 +1,8 @@
 name: Images
 
-# Builds the backend, frontend and migrate images for arm64 (the Oracle Cloud Ampere A1 nodes) and
-# pushes them to GHCR, tagged with the short commit SHA (plus `main` on the main branch). On main
-# it then commits the new tag into deploy/k8s, which Argo CD deploys.
+# Builds the backend, auth-service, frontend and migrate images for arm64 (the Oracle Cloud
+# Ampere A1 nodes) and pushes them to GHCR, tagged with the short commit SHA (plus `main` on the
+# main branch). On main it then commits the new tag into deploy/k8s, which Argo CD deploys.
 on:
   pull_request:
     paths-ignore: ['**.md', 'docs/**', 'deploy/**']
@@ -34,9 +34,14 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - { name: restaurant-backend, dockerfile: apps/backend/Dockerfile }
-          - { name: restaurant-frontend, dockerfile: apps/frontend/Dockerfile }
-          - { name: restaurant-migrate, dockerfile: libs/database/Dockerfile }
+          - name: restaurant-backend
+            dockerfile: apps/backend/Dockerfile
+          - name: restaurant-auth-service
+            dockerfile: apps/auth-service/Dockerfile
+          - name: restaurant-frontend
+            dockerfile: apps/frontend/Dockerfile
+          - name: restaurant-migrate
+            dockerfile: libs/database/Dockerfile
     steps:
       - uses: actions/checkout@v7
         with:
@@ -106,7 +111,7 @@ jobs:
 
       - name: Set image tags
         run: |
-          sed -i -E "s#(image: $REGISTRY/restaurant-(backend|frontend|migrate)):.*#\1:${SOURCE_SHA::7}#" deploy/k8s/*.yaml
+          sed -i -E "s#(image: $REGISTRY/restaurant-(backend|auth-service|frontend|migrate)):.*#\1:${SOURCE_SHA::7}#" deploy/k8s/*.yaml
           git diff
 
       - name: Commit and push
