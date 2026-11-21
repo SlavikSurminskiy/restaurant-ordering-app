@@ -15,7 +15,7 @@
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
-        "${workspaceFolder}/dist/apps/orders-service/**/*.js",
+        "${workspaceFolder}/dist/apps/backend/orders-service/**/*.js",
         "!**/node_modules/**"
       ]
     },
@@ -33,7 +33,7 @@
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
-        "${workspaceFolder}/dist/apps/auth-service/**/*.js",
+        "${workspaceFolder}/dist/apps/backend/auth-service/**/*.js",
         "!**/node_modules/**"
       ]
     },
@@ -51,7 +51,7 @@
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
-        "${workspaceFolder}/dist/apps/menu-service/**/*.js",
+        "${workspaceFolder}/dist/apps/backend/menu-service/**/*.js",
         "!**/node_modules/**"
       ]
     },
@@ -69,7 +69,7 @@
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
-        "${workspaceFolder}/dist/apps/realtime-gateway/**/*.js",
+        "${workspaceFolder}/dist/apps/backend/realtime-gateway/**/*.js",
         "!**/node_modules/**"
       ]
     }

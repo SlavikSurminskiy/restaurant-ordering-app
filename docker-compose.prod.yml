@@ -49,7 +49,7 @@ services:
   orders-service:
     build:
       context: .
-      dockerfile: apps/orders-service/Dockerfile
+      dockerfile: apps/backend/orders-service/Dockerfile
     image: restaurant-orders-service
     restart: unless-stopped
     environment:
@@ -83,7 +83,7 @@ services:
   auth-service:
     build:
       context: .
-      dockerfile: apps/auth-service/Dockerfile
+      dockerfile: apps/backend/auth-service/Dockerfile
     image: restaurant-auth-service
     restart: unless-stopped
     environment:
@@ -116,7 +116,7 @@ services:
   menu-service:
     build:
       context: .
-      dockerfile: apps/menu-service/Dockerfile
+      dockerfile: apps/backend/menu-service/Dockerfile
     image: restaurant-menu-service
     restart: unless-stopped
     environment:
@@ -149,7 +149,7 @@ services:
   realtime-gateway:
     build:
       context: .
-      dockerfile: apps/realtime-gateway/Dockerfile
+      dockerfile: apps/backend/realtime-gateway/Dockerfile
     image: restaurant-realtime-gateway
     restart: unless-stopped
     environment:
