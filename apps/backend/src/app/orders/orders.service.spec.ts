@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
+import { RequestUser } from '@restaurant/backend-auth';
 import { Prisma, PrismaErrorCode, PrismaService } from '@restaurant/database';
 import {
   OrderConflictReason,
@@ -11,7 +12,6 @@ import {
   UserRole,
 } from '@restaurant/shared-api-types';
 
-import { RequestUser } from '../auth/auth.models';
 import { DiscountService } from '../discount/discount.service';
 import { EventBus } from '../events/event-bus/event-bus';
 

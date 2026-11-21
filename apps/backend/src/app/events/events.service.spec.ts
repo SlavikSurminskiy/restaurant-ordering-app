@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { RequestUser } from '@restaurant/backend-auth';
 import {
   UserRole,
   ServerEvent,
@@ -7,8 +8,6 @@ import {
   MenuEventType,
   OrderEventType,
 } from '@restaurant/shared-api-types';
-
-import { RequestUser } from '../auth/auth.models';
 
 import { EventBus } from './event-bus/event-bus';
 import { EventsService } from './events.service';

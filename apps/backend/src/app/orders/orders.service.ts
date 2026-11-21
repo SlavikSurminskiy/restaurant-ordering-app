@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { RequestUser } from '@restaurant/backend-auth';
 import {
   isPrismaError,
   PrismaErrorCode,
@@ -18,7 +19,6 @@ import {
 } from '@restaurant/shared-api-types';
 import { calculateTotals } from '@restaurant/shared-utils';
 
-import { RequestUser } from '../auth/auth.models';
 import { DiscountService } from '../discount/discount.service';
 import { EventBus } from '../events/event-bus/event-bus';
 

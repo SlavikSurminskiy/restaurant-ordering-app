@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { JwtAuthModule } from '@restaurant/backend-auth';
 import { DatabaseModule } from '@restaurant/database';
 
 import { AuthModule } from './auth/auth.module';
@@ -13,6 +14,7 @@ import { OrdersModule } from './orders/orders.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
     DatabaseModule,
+    JwtAuthModule,
     EventsModule,
     AuthModule,
     DiscountModule,

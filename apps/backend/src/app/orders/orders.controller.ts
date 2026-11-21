@@ -11,13 +11,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
+import {
+  CurrentUser,
+  JwtAuthGuard,
+  RequestUser,
+  Roles,
+  RolesGuard,
+} from '@restaurant/backend-auth';
 import { IDEMPOTENCY_KEY_HEADER, UserRole } from '@restaurant/shared-api-types';
-
-import { RequestUser } from '../auth/auth.models';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 
 import {
   OrderResponseDto,

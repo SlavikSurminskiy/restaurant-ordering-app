@@ -13,13 +13,17 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 
-import { authCookieBaseOptions, authCookieOptions } from './auth.config';
-import { AUTH_COOKIE } from './auth.constants';
+import {
+  AUTH_COOKIE,
+  authCookieBaseOptions,
+  authCookieOptions,
+  CurrentUser,
+  JwtAuthGuard,
+  RequestUser,
+} from '@restaurant/backend-auth';
+
 import { AuthUserResponseDto, LoginRequestDto } from './auth.dto';
-import { RequestUser } from './auth.models';
 import { AuthService } from './auth.service';
-import { CurrentUser } from './decorators/current-user.decorator';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
