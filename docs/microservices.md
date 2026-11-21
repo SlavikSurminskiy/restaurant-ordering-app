@@ -1,6 +1,6 @@
 # Microservices
 
-A plan, nothing is built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
+A plan in progress: `auth-service` is cut out and deployed (shared `users` table for now); the rest is not built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
 
 Two stages, in this order on purpose:
 
@@ -100,4 +100,8 @@ Stage B:
 
 ## Resources
 
-Four or five Node services at 150–250 MB each fit on the two 6 GB nodes next to Postgres, Traefik, cert-manager and Argo CD. Kafka is the only large addition (stage B).
+The scheduler places pods by their **requests**, not by real use. Each node (1 OCPU, 6 GB) offers 840m CPU and about 4.3 GiB to pods; on 2026-11-21 the pods requested 740m + 580m CPU and 1.4 + 1.0 GiB memory. **CPU requests are the limit, not memory**: OKE's own pods (flannel, CoreDNS, CSI, agents) take about 300m per node.
+
+- **Stage A fits.** `auth-service`, `menu-service` and `realtime-gateway` at about 50m CPU and 192 MiB each, one replica each; the backend's 250m stays with `orders-service`. The real use of the backend is about 180 MiB and almost no CPU, so its request can go down too.
+- **Stage B does not fit as is.** Strimzi with one KRaft broker needs about 1–1.5 GB and a few hundred millicores. Options: lower the requests to real use, or grow the node pool to 2 OCPU and 12 GB per node in `deploy/terraform/oke.tf` (still within Always Free: 4 OCPU and 24 GB in total; new shapes apply to new nodes, so the nodes are replaced), or Aiven instead of an in-cluster broker.
+- Several replicas of a stateless service (for a node failure) cost one more request each; add them after the node pool grows.
