@@ -57,9 +57,13 @@ spec:
             # so the password is never written into a manifest.
             - name: DATABASE_URL
               value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+          # The scheduler needs this much free CPU on a node before the pod can start, and the
+          # nodes have little left (docs/microservices.md, resources). The migration runs for a
+          # few seconds and mostly waits on Postgres, so a small request is enough; without a CPU
+          # limit it can still use idle CPU.
           resources:
             requests:
-              cpu: 250m
+              cpu: 50m
               memory: 512Mi
             limits:
               memory: 512Mi
