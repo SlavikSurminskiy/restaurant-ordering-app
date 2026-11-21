@@ -16,14 +16,14 @@ import {
   UpdateCategoryRequest,
 } from '@restaurant/shared-api-types';
 
-import { EventBus } from '../../events/event-bus/event-bus';
+import { EventPublisher } from '../../events/event-publisher';
 import { CATEGORY_SELECT } from '../menu.constants';
 
 @Injectable()
 export class CategoriesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly events: EventBus,
+    private readonly events: EventPublisher,
   ) {}
 
   async create(request: CreateCategoryRequest): Promise<Category> {
@@ -32,7 +32,10 @@ export class CategoriesService {
       select: CATEGORY_SELECT,
     });
 
-    this.events.publish({ type: MenuEventType.CategoryUpserted, category });
+    await this.events.publish({
+      type: MenuEventType.CategoryUpserted,
+      category,
+    });
 
     return category;
   }
@@ -54,7 +57,10 @@ export class CategoriesService {
       throw error;
     }
 
-    this.events.publish({ type: MenuEventType.CategoryUpserted, category });
+    await this.events.publish({
+      type: MenuEventType.CategoryUpserted,
+      category,
+    });
 
     return category;
   }
@@ -76,7 +82,7 @@ export class CategoriesService {
       throw error;
     }
 
-    this.events.publish({
+    await this.events.publish({
       type: MenuEventType.CategoryDeleted,
       categoryId: id,
     });

@@ -19,9 +19,9 @@ import {
 } from '@restaurant/shared-api-types';
 import { calculateTotals } from '@restaurant/shared-utils';
 
-import { DiscountService } from '../discount/discount.service';
 import { EventBus } from '../events/event-bus/event-bus';
 
+import { MenuClient } from './menu-client/menu-client.service';
 import { OrderConflictsService } from './order-conflicts/order-conflicts.service';
 import {
   OrderStatusService,
@@ -35,7 +35,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventBus,
-    private readonly discount: DiscountService,
+    private readonly menu: MenuClient,
     private readonly orderStatus: OrderStatusService,
     private readonly orderConflicts: OrderConflictsService,
   ) {}
@@ -61,47 +61,41 @@ export class OrdersService {
       return existing;
     }
 
+    // Checked against menu-service before the insert, not in one transaction with it: a price
+    // changed in between is accepted (docs/microservices.md, stage A decisions).
+    const { dishes, discount } = await this.menu.getPricing({
+      dishIds: request.items.map(({ dishId }) => dishId),
+    });
+
+    const conflicts = this.orderConflicts.find(request.items, dishes);
+
+    if (conflicts.length) {
+      throw new ConflictException({ conflicts });
+    }
+
+    const names = new Map(dishes.map(({ id, name }) => [id, name]));
+    const items = request.items.map(({ dishId, quantity, unitPrice }) => ({
+      dishId,
+      quantity,
+      unitPrice,
+      name: names.get(dishId) ?? '',
+    }));
+
     let order: Order;
 
     try {
-      order = await this.prisma.$transaction(async (tx) => {
-        const dishes = await tx.dish.findMany({
-          where: { id: { in: request.items.map(({ dishId }) => dishId) } },
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            isOpenPrice: true,
-            available: true,
-          },
-        });
-
-        const conflicts = this.orderConflicts.find(request.items, dishes);
-
-        if (conflicts.length) {
-          throw new ConflictException({ conflicts });
-        }
-
-        const names = new Map(dishes.map(({ id, name }) => [id, name]));
-        const items = request.items.map(({ dishId, quantity, unitPrice }) => ({
-          dishId,
-          quantity,
-          unitPrice,
-          name: names.get(dishId) ?? '',
-        }));
-
-        const created = await tx.order.create({
-          data: {
-            userId: user.id,
-            idempotencyKey,
-            ...calculateTotals(items, this.discount.discount),
-            items: { create: items },
-          },
-          include: ORDER_INCLUDE,
-        });
-
-        return toOrder(created);
+      // One insert with nested items is atomic on its own.
+      const created = await this.prisma.order.create({
+        data: {
+          userId: user.id,
+          idempotencyKey,
+          ...calculateTotals(items, discount),
+          items: { create: items },
+        },
+        include: ORDER_INCLUDE,
       });
+
+      order = toOrder(created);
     } catch (error) {
       // Two requests with the same key raced; the first one created the order.
       if (isPrismaError(error, PrismaErrorCode.UniqueConstraintViolation)) {

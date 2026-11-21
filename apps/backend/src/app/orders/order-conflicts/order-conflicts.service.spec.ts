@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
 
-import { OrderConflictReason } from '@restaurant/shared-api-types';
+import { OrderConflictReason, PricedDish } from '@restaurant/shared-api-types';
 
-import { OrderConflictsService, OrderedDish } from './order-conflicts.service';
+import { OrderConflictsService } from './order-conflicts.service';
 
 describe(OrderConflictsService.name, () => {
   it('should find nothing when the order matches the menu', async () => {
@@ -85,7 +85,7 @@ const Arrange = {
     return moduleRef.get(OrderConflictsService);
   },
 
-  createDish(change: Partial<OrderedDish> = {}): OrderedDish {
+  createDish(change: Partial<PricedDish> = {}): PricedDish {
     return {
       id: 'd-caesar',
       name: 'Chicken Caesar',

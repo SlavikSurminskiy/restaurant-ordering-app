@@ -1,8 +1,10 @@
-import { Logger } from '@nestjs/common';
+import { Logger, RequestMethod } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+
+import { INTERNAL_EVENTS_PATH } from '@restaurant/shared-api-types';
 
 import { AppModule } from './app/app.module';
 
@@ -17,7 +19,10 @@ async function bootstrap() {
 
   const globalPrefix = 'api';
 
-  app.setGlobalPrefix(globalPrefix);
+  // Service-to-service routes stay outside /api, which is the only prefix routed from outside.
+  app.setGlobalPrefix(globalPrefix, {
+    exclude: [{ path: INTERNAL_EVENTS_PATH, method: RequestMethod.POST }],
+  });
   app.enableShutdownHooks();
   app.use(cookieParser());
 

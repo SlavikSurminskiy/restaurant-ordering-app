@@ -4,6 +4,14 @@ export default {
     target: `http://localhost:${process.env.AUTH_SERVICE_PORT ?? 3001}`,
     secure: false,
   },
+  '/api/menu': {
+    target: `http://localhost:${process.env.MENU_SERVICE_PORT ?? 3002}`,
+    secure: false,
+  },
+  '/api/discount': {
+    target: `http://localhost:${process.env.MENU_SERVICE_PORT ?? 3002}`,
+    secure: false,
+  },
   '/api': {
     target: `http://localhost:${process.env.BACKEND_PORT ?? 3000}`,
     secure: false,

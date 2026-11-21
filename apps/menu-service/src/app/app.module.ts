@@ -1,0 +1,25 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+
+import { JwtAuthModule } from '@restaurant/backend-auth';
+import { DatabaseModule } from '@restaurant/database';
+
+import { DiscountModule } from './discount/discount.module';
+import { EventsModule } from './events/events.module';
+import { HealthModule } from './health/health.module';
+import { MenuModule } from './menu/menu.module';
+import { OrderPricingModule } from './order-pricing/order-pricing.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, cache: true }),
+    DatabaseModule,
+    JwtAuthModule,
+    EventsModule,
+    DiscountModule,
+    HealthModule,
+    MenuModule,
+    OrderPricingModule,
+  ],
+})
+export class AppModule {}

@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import { Prisma, PrismaErrorCode, PrismaService } from '@restaurant/database';
 import { Category, MenuEventType } from '@restaurant/shared-api-types';
 
-import { EventBus } from '../../events/event-bus/event-bus';
+import { EventPublisher } from '../../events/event-publisher';
 import { CATEGORY_SELECT } from '../menu.constants';
 
 import { CategoriesService } from './categories.service';
@@ -36,7 +36,7 @@ describe(CategoriesService.name, () => {
 
       await service.create({ name: category.name });
 
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: MenuEventType.CategoryUpserted,
         category,
       });
@@ -68,7 +68,7 @@ describe(CategoriesService.name, () => {
 
       await service.update(category.id, { name: category.name });
 
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: MenuEventType.CategoryUpserted,
         category,
       });
@@ -84,7 +84,7 @@ describe(CategoriesService.name, () => {
       await expect(
         service.update(Arrange.createCategory().id, { name: 'Salads' }),
       ).rejects.toBeInstanceOf(NotFoundException);
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
   });
 
@@ -108,7 +108,7 @@ describe(CategoriesService.name, () => {
 
       await service.delete(id);
 
-      expect(spies.eventBusMock.publish).toHaveBeenCalledWith({
+      expect(spies.eventPublisherMock.publish).toHaveBeenCalledWith({
         type: MenuEventType.CategoryDeleted,
         categoryId: id,
       });
@@ -124,7 +124,7 @@ describe(CategoriesService.name, () => {
       await expect(
         service.delete(Arrange.createCategory().id),
       ).rejects.toBeInstanceOf(NotFoundException);
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
 
     it('should answer 409 while the category has dishes and publish nothing', async () => {
@@ -137,7 +137,7 @@ describe(CategoriesService.name, () => {
       await expect(
         service.delete(Arrange.createCategory().id),
       ).rejects.toBeInstanceOf(ConflictException);
-      expect(spies.eventBusMock.publish).not.toHaveBeenCalled();
+      expect(spies.eventPublisherMock.publish).not.toHaveBeenCalled();
     });
 
     it('should pass other errors through', async () => {
@@ -157,7 +157,7 @@ interface Spies {
   prismaMock: {
     category: { create: Mock; update: Mock; delete: Mock };
   };
-  eventBusMock: { publish: Mock };
+  eventPublisherMock: { publish: Mock };
 }
 
 const Arrange = {
@@ -166,7 +166,7 @@ const Arrange = {
       providers: [
         CategoriesService,
         { provide: PrismaService, useValue: spies.prismaMock },
-        { provide: EventBus, useValue: spies.eventBusMock },
+        { provide: EventPublisher, useValue: spies.eventPublisherMock },
       ],
     }).compile();
 
@@ -182,7 +182,7 @@ const Arrange = {
           delete: vi.fn().mockResolvedValue({}),
         },
       },
-      eventBusMock: { publish: vi.fn() },
+      eventPublisherMock: { publish: vi.fn().mockResolvedValue(undefined) },
     };
   },
 
