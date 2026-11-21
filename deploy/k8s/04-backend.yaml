@@ -56,7 +56,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: api
-          image: ghcr.io/slaviksurminskiy/restaurant-backend:fd7de0d
+          image: ghcr.io/slaviksurminskiy/restaurant-backend:156b9d0
           ports:
             - name: http
               containerPort: 3000
