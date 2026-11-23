@@ -118,6 +118,7 @@ async function seedOrders(): Promise<void> {
       create: {
         ...data,
         userId: user.id,
+        userName: user.name,
         idempotencyKey: order.idempotencyKey,
         items: { create: items },
       },

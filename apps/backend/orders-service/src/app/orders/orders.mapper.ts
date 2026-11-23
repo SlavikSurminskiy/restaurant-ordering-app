@@ -6,7 +6,7 @@ export function toOrder(record: OrderRecord): Order {
   return {
     id: record.id,
     userId: record.userId,
-    userName: record.user.name,
+    userName: record.userName,
     status: record.status,
     items: record.items,
     subtotal: record.subtotal,

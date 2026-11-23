@@ -30,6 +30,7 @@ describe(AuthService.name, () => {
       expect(spies.jwtMock.signAsync).toHaveBeenCalledWith({
         sub: admin.id,
         role: UserRole.Admin,
+        name: admin.name,
       });
     });
 

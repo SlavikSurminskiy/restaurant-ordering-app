@@ -52,7 +52,11 @@ export class AuthService {
       role: found.role,
     };
 
-    const payload: JwtPayload = { sub: user.id, role: user.role };
+    const payload: JwtPayload = {
+      sub: user.id,
+      role: user.role,
+      name: user.name,
+    };
 
     return { user, token: await this.jwt.signAsync(payload) };
   }

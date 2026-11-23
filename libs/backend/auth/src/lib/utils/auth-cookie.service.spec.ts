@@ -15,6 +15,7 @@ describe(AuthCookieService.name, () => {
     spies.jwtMock.verifyAsync.mockResolvedValue({
       sub: 'user-id',
       role: UserRole.Customer,
+      name: 'Ada',
     });
     const service = await Arrange.setup(spies);
 
@@ -22,7 +23,11 @@ describe(AuthCookieService.name, () => {
       service.extractUserFromCookie(
         Arrange.createRequest({ [AUTH_COOKIE]: 'token' }),
       ),
-    ).resolves.toEqual({ id: 'user-id', role: UserRole.Customer });
+    ).resolves.toEqual({
+      id: 'user-id',
+      role: UserRole.Customer,
+      name: 'Ada',
+    });
     expect(spies.jwtMock.verifyAsync).toHaveBeenCalledWith('token');
   });
 
@@ -51,8 +56,10 @@ describe(AuthCookieService.name, () => {
   it.each([
     [{ role: UserRole.Admin }],
     [{ sub: '', role: UserRole.Admin }],
-    [{ sub: 'user-id', role: 'SUPERUSER' }],
-    [{ sub: 'user-id' }],
+    [{ sub: 'user-id', role: 'SUPERUSER', name: 'Ada' }],
+    [{ sub: 'user-id', name: 'Ada' }],
+    [{ sub: 'user-id', role: UserRole.Admin }],
+    [{ sub: 'user-id', role: UserRole.Admin, name: 42 }],
   ])(
     'should return null for a signed token with the payload %j',
     async (payload) => {
@@ -75,13 +82,18 @@ describe(AuthCookieService.name, () => {
       const token = await jwt.signAsync({
         sub: 'user-id',
         role: UserRole.Admin,
+        name: 'Ada',
       });
 
       await expect(
         service.extractUserFromCookie(
           Arrange.createRequest({ [AUTH_COOKIE]: token }),
         ),
-      ).resolves.toEqual({ id: 'user-id', role: UserRole.Admin });
+      ).resolves.toEqual({
+        id: 'user-id',
+        role: UserRole.Admin,
+        name: 'Ada',
+      });
     });
 
     it('should reject a token signed with another secret', async () => {

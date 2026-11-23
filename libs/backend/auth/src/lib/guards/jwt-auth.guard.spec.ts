@@ -16,6 +16,7 @@ describe(JwtAuthGuard.name, () => {
     spies.authCookieServiceMock.extractUserFromCookie.mockResolvedValue({
       id: 'user-id',
       role: UserRole.Customer,
+      name: 'Ada',
     });
     const guard = await Arrange.setup(spies);
     const request = Arrange.createRequest();
@@ -27,7 +28,11 @@ describe(JwtAuthGuard.name, () => {
     expect(
       spies.authCookieServiceMock.extractUserFromCookie,
     ).toHaveBeenCalledWith(request);
-    expect(request.user).toEqual({ id: 'user-id', role: UserRole.Customer });
+    expect(request.user).toEqual({
+      id: 'user-id',
+      role: UserRole.Customer,
+      name: 'Ada',
+    });
   });
 
   it('should reject a request without a user', async () => {

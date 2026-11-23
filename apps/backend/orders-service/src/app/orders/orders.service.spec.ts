@@ -39,6 +39,7 @@ describe(OrdersService.name, () => {
       expect(spies.prismaMock.order.create).toHaveBeenCalledWith({
         data: {
           userId: 'u-customer',
+          userName: 'Customer',
           idempotencyKey: 'key-1',
           subtotal: 2500,
           discount: 500,
@@ -191,7 +192,11 @@ describe(OrdersService.name, () => {
       const spies = Arrange.createSpies();
       const service = await Arrange.setup(spies);
 
-      await service.list({ id: 'u-admin', role: UserRole.Admin });
+      await service.list({
+        id: 'u-admin',
+        role: UserRole.Admin,
+        name: 'Admin',
+      });
 
       expect(spies.prismaMock.order.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: {} }),
@@ -363,7 +368,7 @@ const Arrange = {
   },
 
   createCustomer(): RequestUser {
-    return { id: 'u-customer', role: UserRole.Customer };
+    return { id: 'u-customer', role: UserRole.Customer, name: 'Customer' };
   },
 
   createDish(): PricedDish {
@@ -380,6 +385,7 @@ const Arrange = {
     return {
       id: 'o-1',
       userId: 'u-customer',
+      userName: 'Customer',
       idempotencyKey: 'key-1',
       status: OrderStatus.New,
       subtotal: 2500,
@@ -387,7 +393,6 @@ const Arrange = {
       total: 2000,
       createdAt: new Date('2026-10-25T10:00:00.000Z'),
       updatedAt: new Date('2026-10-25T10:00:00.000Z'),
-      user: { name: 'Customer' },
       items: [
         {
           id: 'i-1',

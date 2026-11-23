@@ -94,7 +94,7 @@ describe(AuthController.name, () => {
       const controller = await Arrange.setup(spies);
 
       await expect(
-        controller.me({ id: user.id, role: user.role }),
+        controller.me({ id: user.id, role: user.role, name: user.name }),
       ).resolves.toEqual(user);
       expect(spies.authServiceMock.getUser).toHaveBeenCalledWith(user.id);
     });
@@ -105,7 +105,11 @@ describe(AuthController.name, () => {
       const controller = await Arrange.setup(spies);
 
       await expect(
-        controller.me({ id: 'deleted', role: UserRole.Customer }),
+        controller.me({
+          id: 'deleted',
+          role: UserRole.Customer,
+          name: 'Gone',
+        }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
