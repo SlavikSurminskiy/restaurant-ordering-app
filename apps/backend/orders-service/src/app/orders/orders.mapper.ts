@@ -6,7 +6,8 @@ export function toOrder(record: OrderRecord): Order {
   return {
     id: record.id,
     userId: record.userId,
-    userName: record.user.name,
+    // Nullable until the backfill; required from the next migration on.
+    userName: record.userName ?? '',
     status: record.status,
     items: record.items,
     subtotal: record.subtotal,

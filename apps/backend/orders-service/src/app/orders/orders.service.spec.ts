@@ -39,6 +39,7 @@ describe(OrdersService.name, () => {
       expect(spies.prismaMock.order.create).toHaveBeenCalledWith({
         data: {
           userId: 'u-customer',
+          userName: 'Customer',
           idempotencyKey: 'key-1',
           subtotal: 2500,
           discount: 500,
@@ -384,6 +385,7 @@ const Arrange = {
     return {
       id: 'o-1',
       userId: 'u-customer',
+      userName: 'Customer',
       idempotencyKey: 'key-1',
       status: OrderStatus.New,
       subtotal: 2500,
@@ -391,7 +393,6 @@ const Arrange = {
       total: 2000,
       createdAt: new Date('2026-10-25T10:00:00.000Z'),
       updatedAt: new Date('2026-10-25T10:00:00.000Z'),
-      user: { name: 'Customer' },
       items: [
         {
           id: 'i-1',

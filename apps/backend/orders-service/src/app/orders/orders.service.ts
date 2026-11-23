@@ -87,6 +87,7 @@ export class OrdersService {
       const created = await this.prisma.order.create({
         data: {
           userId: user.id,
+          userName: user.name,
           idempotencyKey,
           ...calculateTotals(items, discount),
           items: { create: items },

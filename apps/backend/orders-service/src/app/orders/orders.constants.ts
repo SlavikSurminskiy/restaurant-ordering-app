@@ -12,7 +12,6 @@ export const ORDER_INCLUDE = {
     },
     orderBy: { name: 'asc' },
   },
-  user: { select: { name: true } },
 } satisfies Prisma.OrderInclude;
 
 export type OrderRecord = Prisma.OrderGetPayload<{
