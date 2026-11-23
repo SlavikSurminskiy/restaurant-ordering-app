@@ -27,19 +27,20 @@ export class AuthCookieService {
     }
 
     return this.#isJwtPayload(payload)
-      ? { id: payload.sub, role: payload.role }
+      ? { id: payload.sub, role: payload.role, name: payload.name }
       : null;
   }
 
   #isJwtPayload(payload: unknown): payload is JwtPayload {
-    const { sub, role } = (payload ?? {}) as Partial<
+    const { sub, role, name } = (payload ?? {}) as Partial<
       Record<keyof JwtPayload, unknown>
     >;
 
     return (
       typeof sub === 'string' &&
       sub !== '' &&
-      Object.values<unknown>(UserRole).includes(role)
+      Object.values<unknown>(UserRole).includes(role) &&
+      typeof name === 'string'
     );
   }
 }

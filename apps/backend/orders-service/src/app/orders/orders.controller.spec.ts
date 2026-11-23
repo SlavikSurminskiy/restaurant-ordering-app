@@ -112,6 +112,6 @@ const Arrange = {
   },
 
   createUser(): RequestUser {
-    return { id: 'u-customer', role: UserRole.Customer };
+    return { id: 'u-customer', role: UserRole.Customer, name: 'Customer' };
   },
 };

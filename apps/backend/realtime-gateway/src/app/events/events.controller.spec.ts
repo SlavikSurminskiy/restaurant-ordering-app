@@ -57,6 +57,7 @@ describe(EventsController.name, () => {
     spies.authCookieServiceMock.extractUserFromCookie.mockResolvedValue({
       id: 'u-owner',
       role: UserRole.Customer,
+      name: 'Owner',
     });
     const controller = await Arrange.setup(spies);
 
@@ -65,6 +66,7 @@ describe(EventsController.name, () => {
     expect(spies.eventsServiceMock.eventsFor).toHaveBeenCalledWith({
       id: 'u-owner',
       role: UserRole.Customer,
+      name: 'Owner',
     });
   });
 

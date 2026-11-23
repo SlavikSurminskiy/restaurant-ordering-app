@@ -191,7 +191,11 @@ describe(OrdersService.name, () => {
       const spies = Arrange.createSpies();
       const service = await Arrange.setup(spies);
 
-      await service.list({ id: 'u-admin', role: UserRole.Admin });
+      await service.list({
+        id: 'u-admin',
+        role: UserRole.Admin,
+        name: 'Admin',
+      });
 
       expect(spies.prismaMock.order.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: {} }),
@@ -363,7 +367,7 @@ const Arrange = {
   },
 
   createCustomer(): RequestUser {
-    return { id: 'u-customer', role: UserRole.Customer };
+    return { id: 'u-customer', role: UserRole.Customer, name: 'Customer' };
   },
 
   createDish(): PricedDish {

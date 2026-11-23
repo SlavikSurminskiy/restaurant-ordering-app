@@ -79,6 +79,6 @@ const Arrange = {
   },
 
   createUser(role: UserRole): RequestUser {
-    return { id: 'user-id', role };
+    return { id: 'user-id', role, name: 'Ada' };
   },
 };

@@ -108,7 +108,7 @@ const Arrange = {
   },
 
   createUser(id: string, role: UserRole): RequestUser {
-    return { id, role };
+    return { id, role, name: id };
   },
 
   createMenuEvent(): ServerEvent {
