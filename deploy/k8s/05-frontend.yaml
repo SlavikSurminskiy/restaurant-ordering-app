@@ -29,7 +29,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: nginx
-          image: ghcr.io/slaviksurminskiy/restaurant-frontend:dc9f726
+          image: ghcr.io/slaviksurminskiy/restaurant-frontend:4db1ed0
           ports:
             - name: http
               containerPort: 8080 # nginx-unprivileged listens on 8080, not 80

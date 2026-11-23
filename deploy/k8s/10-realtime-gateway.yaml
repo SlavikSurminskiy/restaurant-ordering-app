@@ -39,7 +39,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: realtime
-          image: ghcr.io/slaviksurminskiy/restaurant-realtime-gateway:dc9f726
+          image: ghcr.io/slaviksurminskiy/restaurant-realtime-gateway:4db1ed0
           ports:
             - name: http
               containerPort: 3003
