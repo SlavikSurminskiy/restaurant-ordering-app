@@ -6,6 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["auth", "menu", "orders"]
 }
 
 /// Money fields (price, unitPrice, subtotal, discount, total) are integers in cents: 12550 = $125.50.
@@ -14,6 +15,8 @@ datasource db {
 enum Role {
   ADMIN
   CUSTOMER
+
+  @@schema("auth")
 }
 
 enum OrderStatus {
@@ -22,6 +25,8 @@ enum OrderStatus {
   READY
   COMPLETED
   CANCELLED
+
+  @@schema("orders")
 }
 
 model User {
@@ -34,6 +39,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   @@map("users")
+  @@schema("auth")
 }
 
 model Category {
@@ -44,6 +50,7 @@ model Category {
   dishes Dish[]
 
   @@map("categories")
+  @@schema("menu")
 }
 
 model Dish {
@@ -62,6 +69,7 @@ model Dish {
 
   @@index([categoryId])
   @@map("dishes")
+  @@schema("menu")
 }
 
 model Order {
@@ -83,6 +91,7 @@ model Order {
 
   @@unique([userId, idempotencyKey])
   @@map("orders")
+  @@schema("orders")
 }
 
 /// Name and price are copied at order time, so later menu changes don't rewrite history.
@@ -100,4 +109,5 @@ model OrderItem {
   @@index([orderId])
   @@index([dishId])
   @@map("order_items")
+  @@schema("orders")
 }
