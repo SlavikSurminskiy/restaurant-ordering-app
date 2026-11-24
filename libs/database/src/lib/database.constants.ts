@@ -1,0 +1,1 @@
+export const DATABASE_URL_VARIABLE = Symbol('DATABASE_URL_VARIABLE');
