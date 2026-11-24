@@ -1,4 +1,5 @@
-# Migration image: applies pending migrations to DATABASE_URL (`prisma migrate deploy`) and exits.
+# Migration image: applies pending migrations to DATABASE_URL (`prisma migrate deploy`), sets the
+# passwords of the services' database roles from *_SERVICE_DB_PASSWORD, and exits.
 # Build from the repository root:
 #   docker build -f libs/database/Dockerfile -t restaurant-migrate .
 
@@ -31,6 +32,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 
 COPY libs/database/prisma.config.ts ./
 COPY libs/database/prisma ./prisma
+COPY libs/database/scripts/set-role-passwords.mjs ./scripts/
 
 USER node
-CMD ["./node_modules/.bin/prisma", "migrate", "deploy"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node scripts/set-role-passwords.mjs"]

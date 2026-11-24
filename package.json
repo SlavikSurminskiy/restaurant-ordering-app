@@ -17,6 +17,7 @@
     "db:generate": "nx run database:prisma-generate",
     "db:migrate": "nx run database:prisma-migrate",
     "db:deploy": "nx run database:prisma-migrate-deploy",
+    "db:roles": "nx run database:prisma-roles",
     "db:reset": "nx run database:prisma-reset",
     "db:seed": "nx run database:prisma-seed",
     "db:studio": "nx run database:prisma-studio"
