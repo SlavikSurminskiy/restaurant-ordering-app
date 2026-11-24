@@ -8,7 +8,9 @@
 #                     the Ingress (07-ingress.yaml) sends /api/orders to this Service
 #   role: orders      label; any key/value, it only has to be the same in the three places marked [L]
 #   http              port name; the Service's targetPort and the probes refer to the container port by it
-#   postgres, backend Secrets created by hand (docs/deployment.md, step 4); `backend` holds the
+#   postgres, backend, db-roles
+#                     Secrets created by hand (docs/deployment.md, step 4); db-roles holds the
+#                     password of this service's database role, `backend` the
 #                     JWT_SECRET every service shares (its name is older than the split)
 #   db                host name = the Service from 02-postgres.yaml
 #   menu-service      host name = the Service from 09-menu-service.yaml (prices for new orders)
@@ -65,24 +67,21 @@ spec:
             - configMapRef:
                 name: orders-service-config
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres
-                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
                   name: postgres
                   key: POSTGRES_DB
+            # Its own database role, with access to the orders schema only; the owner's credentials
+            # (POSTGRES_USER, POSTGRES_PASSWORD) never reach this pod.
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-roles
+                  key: orders-service
             # $(NAME) is replaced with the variables defined above in this list.
-            - name: DATABASE_URL
-              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+            - name: ORDERS_SERVICE_DATABASE_URL
+              value: postgresql://orders_service:$(DB_PASSWORD)@db:5432/$(POSTGRES_DB)
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

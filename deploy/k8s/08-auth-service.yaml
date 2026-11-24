@@ -7,7 +7,9 @@
 #                        /api/auth to this Service
 #   role: auth           label; it only has to be the same in the three places marked [L]
 #   http                 port name; the Service's targetPort and the probes refer to it
-#   postgres, backend    Secrets created by hand (docs/deployment.md, step 4); JWT_SECRET is the
+#   postgres, backend, db-roles
+#                        Secrets created by hand (docs/deployment.md, step 4); db-roles holds the
+#                        password of this service's database role. JWT_SECRET is the
 #                        one the other services verify tokens with, so all read the same Secret
 #   db                   host name = the Service from 02-postgres.yaml
 
@@ -58,23 +60,21 @@ spec:
             - configMapRef:
                 name: auth-service-config
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres
-                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
                   name: postgres
                   key: POSTGRES_DB
-            - name: DATABASE_URL
-              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+            # Its own database role, with access to the auth schema only; the owner's credentials
+            # (POSTGRES_USER, POSTGRES_PASSWORD) never reach this pod.
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-roles
+                  key: auth-service
+            # $(NAME) is replaced with the variables defined above in this list.
+            - name: AUTH_SERVICE_DATABASE_URL
+              value: postgresql://auth_service:$(DB_PASSWORD)@db:5432/$(POSTGRES_DB)
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

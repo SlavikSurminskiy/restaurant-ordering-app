@@ -7,7 +7,9 @@
 #                        /api/menu and /api/discount here, orders-service calls /internal/order-pricing
 #   role: menu           label; it only has to be the same in the three places marked [L]
 #   http                 port name; the Service's targetPort and the probes refer to it
-#   postgres, backend    Secrets created by hand (docs/deployment.md, step 4); JWT_SECRET verifies
+#   postgres, backend, db-roles
+#                        Secrets created by hand (docs/deployment.md, step 4); db-roles holds the
+#                        password of this service's database role. JWT_SECRET verifies
 #                        the admin's cookie on menu changes
 #   db                   host name = the Service from 02-postgres.yaml
 #   realtime-gateway     host name = the Service from 10-realtime-gateway.yaml (EVENTS_URL)
@@ -57,23 +59,21 @@ spec:
             - configMapRef:
                 name: menu-service-config
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres
-                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
                   name: postgres
                   key: POSTGRES_DB
-            - name: DATABASE_URL
-              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+            # Its own database role, with access to the menu schema only; the owner's credentials
+            # (POSTGRES_USER, POSTGRES_PASSWORD) never reach this pod.
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-roles
+                  key: menu-service
+            # $(NAME) is replaced with the variables defined above in this list.
+            - name: MENU_SERVICE_DATABASE_URL
+              value: postgresql://menu_service:$(DB_PASSWORD)@db:5432/$(POSTGRES_DB)
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

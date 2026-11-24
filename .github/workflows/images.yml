@@ -96,8 +96,19 @@ jobs:
         run: |
           docker run --rm --network host \
             -e DATABASE_URL=postgresql://app:app@127.0.0.1:5432/app \
+            -e AUTH_SERVICE_DB_PASSWORD=auth -e MENU_SERVICE_DB_PASSWORD=menu -e ORDERS_SERVICE_DB_PASSWORD=orders \
             "$REGISTRY/restaurant-migrate:${{ steps.tag.outputs.short-sha }}"
           docker exec postgres psql -U app -d app -c 'SELECT migration_name, finished_at FROM _prisma_migrations'
+
+      - name: Check the service roles
+        run: |
+          # A role logs in with the password the image set and reads its own schema...
+          docker exec -e PGPASSWORD=auth postgres psql -h 127.0.0.1 -U auth_service -d app -c 'SELECT count(*) FROM auth.users'
+          # ...and nothing else.
+          if docker exec -e PGPASSWORD=auth postgres psql -h 127.0.0.1 -U auth_service -d app -c 'SELECT count(*) FROM orders.orders'; then
+            echo 'auth_service can read orders.orders' >&2
+            exit 1
+          fi
 
   # Main only: writes the new tag into the image lines of deploy/k8s and pushes that commit. Argo CD
   # in the cluster picks it up and rolls the release out (docs/deployment.md, step 6). The commit
