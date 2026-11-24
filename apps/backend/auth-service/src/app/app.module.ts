@@ -10,7 +10,7 @@ import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
-    DatabaseModule,
+    DatabaseModule.forRoot('AUTH_SERVICE_DATABASE_URL'),
     JwtAuthModule,
     AuthModule,
     HealthModule,

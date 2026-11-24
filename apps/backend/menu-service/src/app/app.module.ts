@@ -13,7 +13,7 @@ import { OrderPricingModule } from './order-pricing/order-pricing.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
-    DatabaseModule,
+    DatabaseModule.forRoot('MENU_SERVICE_DATABASE_URL'),
     JwtAuthModule,
     EventPublisherModule,
     DiscountModule,

@@ -15,6 +15,7 @@
 | `pnpm db:generate`  | `prisma generate`                              |
 | `pnpm db:migrate`   | `prisma migrate dev`: create/apply a migration |
 | `pnpm db:deploy`    | `prisma migrate deploy`                        |
+| `pnpm db:roles`     | Set the services' database role passwords      |
 | `pnpm db:reset`     | `prisma migrate reset`                         |
 | `pnpm db:seed`      | `prisma db seed`                               |
 | `pnpm db:studio`    | Open Prisma Studio                             |
@@ -34,9 +35,9 @@ docker build -f apps/frontend/Dockerfile -t restaurant-frontend .
 docker build -f libs/database/Dockerfile -t restaurant-migrate .
 ```
 
-- **Migrate** runs `prisma migrate deploy` against `DATABASE_URL` and exits: 0 when the database is up to date, non-zero on failure, so the services can start only after it succeeds. Run it before every release. It holds the Prisma CLI (at the root `package.json` version) with the schema and migrations; it does not seed.
-- **Orders service** listens on 3000 and needs `DATABASE_URL` and `JWT_SECRET` (at least 32 characters, because the image sets `NODE_ENV=production`). It does not run migrations.
-- **Auth service** listens on 3001 and needs the same `DATABASE_URL` and `JWT_SECRET`; `JWT_TTL` sets the token lifetime. It does not run migrations.
+- **Migrate** runs `prisma migrate deploy` against `DATABASE_URL`, then sets the passwords of the services' database roles from `AUTH_SERVICE_DB_PASSWORD`, `MENU_SERVICE_DB_PASSWORD` and `ORDERS_SERVICE_DB_PASSWORD`, and exits: 0 when the database is up to date, non-zero on failure, so the services can start only after it succeeds. Run it before every release. It holds the Prisma CLI (at the root `package.json` version) with the schema and migrations; it does not seed.
+- **Orders service** listens on 3000 and needs `ORDERS_SERVICE_DATABASE_URL` (as the role `orders_service`) and `JWT_SECRET` (at least 32 characters, because the image sets `NODE_ENV=production`). It does not run migrations.
+- **Auth service** listens on 3001 and needs `AUTH_SERVICE_DATABASE_URL` (as `auth_service`) and the same `JWT_SECRET`; `JWT_TTL` sets the token lifetime. It does not run migrations.
 - **Frontend** is nginx on 8080 (non-root). It serves the Angular build, falls back to `index.html` for client-side routes and answers `404` for any `/api` path; Traefik routes `/api/*` to the services before nginx. The config is `apps/frontend/nginx.conf.template`.
 
 ### Production-like stack

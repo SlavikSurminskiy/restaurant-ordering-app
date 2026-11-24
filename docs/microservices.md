@@ -1,6 +1,6 @@
 # Microservices
 
-A plan in progress: stage A has split the monolith into `auth-service`, `menu-service`, `realtime-gateway` and `orders-service`, each owning a Postgres schema; database users per service and stage B are not built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
+A plan in progress: stage A has split the monolith into `auth-service`, `menu-service`, `realtime-gateway` and `orders-service`, each owning a Postgres schema and connecting as its own database role; stage B is not built yet. The goal is practice with a service split and with Kafka, not a need of the app: one NestJS backend is the right size for it. The split follows the **strangler fig** pattern: services are cut out of the monolith one at a time, and the app keeps working after every PR.
 
 Two stages, in this order on purpose:
 
@@ -46,7 +46,7 @@ Shared code in Nx:
 
 - `libs/backend/auth`: JWT guards and decorators. Every service checks the JWT itself with the shared `JWT_SECRET`; only `auth-service` issues it.
 - `libs/shared/api-types`: public contracts as now, plus contracts of the internal calls and events.
-- **Chosen:** one `schema.prisma` in `libs/database` with `@@schema` per model and one migration history; the services share the generated client, and the boundary is kept by the code and, later, by database users. The alternative, a Prisma schema per service (`libs/<service>/database`, own migrations and client), separates them fully but needs one migrate job per service; revisit if a service moves to its own database.
+- **Chosen:** one `schema.prisma` in `libs/database` with `@@schema` per model and one migration history; the services share the generated client, and the boundary is kept by the database roles: a service can only read and write its own schema. The alternative, a Prisma schema per service (`libs/<service>/database`, own migrations and client), separates them fully but needs one migrate job per service; revisit if a service moves to its own database.
 
 ### Data ownership
 
@@ -68,7 +68,7 @@ The shared instance is a conscious compromise: shared resources and one point of
 3. **Synchronous `orders → menu` call.** **Chosen:** `MenuClient` calls `POST /internal/order-pricing` with a 3 s timeout and no retries; any failure is `503`, and the checkout retries with the same `Idempotency-Key`. One service's failure becomes another's.
 4. **Events over HTTP.** `menu-service` and `orders-service` `POST /internal/events` to the gateway: when the gateway is down, the event is lost; with two gateway replicas, only one gets it. Stage B fixes both. **Chosen for stage A:** `EventPublisher` (`libs/backend/events`) awaits the POST, logs a failure and does not throw. A lost event costs nothing while the gateway is down, because its SSE clients reconnect and reload the snapshot; the gateway runs one replica with `strategy: Recreate`, so all clients reconnect together.
 5. **Routing.** `/api/*` moves from the frontend's nginx to path rules in the Traefik Ingress; locally `apps/frontend/proxy.conf.mjs` gets one target per path.
-6. **Moving prod data.** **Done:** tables and enums move into schemas `auth`, `menu`, `orders` with `ALTER TABLE/TYPE ... SET SCHEMA` (hand-written migration). Next: one database user per service with grants on its schema only. During the rollout the migrate job moves the tables before the new pods start: the old pods query `public.*` and fail for about a minute, and old orders-service pods can't create orders once `userName` is `NOT NULL`.
+6. **Moving prod data.** **Done:** tables and enums move into schemas `auth`, `menu`, `orders` with `ALTER TABLE/TYPE ... SET SCHEMA` (hand-written migration). Then one database role per service (`auth_service`, `menu_service`, `orders_service`) with `SELECT`, `INSERT`, `UPDATE`, `DELETE` on its own schema only: roles and grants in a hand-written migration, passwords from the Secret `db-roles`, set by the migrate Job. During the schema rollout the migrate job moves the tables before the new pods start: the old pods query `public.*` and fail for about a minute, and old orders-service pods can't create orders once `userName` is `NOT NULL`.
 7. **Local start.** Nx starts four backends on separate ports; the `serve` chain with `readyWhen: signal` grows accordingly.
 8. **Deploy.** Four images instead of one: the `images.yml` matrix and the tag `sed` in its `deploy` job grow; a manifest per service; one migrate hook per database schema in Argo CD.
 

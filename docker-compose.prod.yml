@@ -42,6 +42,10 @@ services:
     image: restaurant-migrate
     environment:
       DATABASE_URL: *database-url
+      # Passwords of the services' database roles; each service connects with its own role below.
+      AUTH_SERVICE_DB_PASSWORD: ${AUTH_SERVICE_DB_PASSWORD:?set in .env.prod}
+      MENU_SERVICE_DB_PASSWORD: ${MENU_SERVICE_DB_PASSWORD:?set in .env.prod}
+      ORDERS_SERVICE_DB_PASSWORD: ${ORDERS_SERVICE_DB_PASSWORD:?set in .env.prod}
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,7 +57,7 @@ services:
     image: restaurant-orders-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: *database-url
+      ORDERS_SERVICE_DATABASE_URL: postgresql://orders_service:${ORDERS_SERVICE_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
       MENU_SERVICE_URL: http://menu-service:3002
       EVENTS_URL: http://realtime-gateway:3003
@@ -87,7 +91,7 @@ services:
     image: restaurant-auth-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: *database-url
+      AUTH_SERVICE_DATABASE_URL: postgresql://auth_service:${AUTH_SERVICE_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
       JWT_TTL: ${JWT_TTL:-28800}
     depends_on:
@@ -120,7 +124,7 @@ services:
     image: restaurant-menu-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: *database-url
+      MENU_SERVICE_DATABASE_URL: postgresql://menu_service:${MENU_SERVICE_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET:?set in .env.prod (at least 32 characters)}
       ORDER_DISCOUNT: ${ORDER_DISCOUNT:-500}
       EVENTS_URL: http://realtime-gateway:3003

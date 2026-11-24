@@ -10,7 +10,7 @@ import { OrdersModule } from './orders/orders.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
-    DatabaseModule,
+    DatabaseModule.forRoot('ORDERS_SERVICE_DATABASE_URL'),
     JwtAuthModule,
     EventPublisherModule,
     HealthModule,

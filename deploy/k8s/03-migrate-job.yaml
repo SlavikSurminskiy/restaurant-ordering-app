@@ -1,4 +1,6 @@
-# One-off migration run: `prisma migrate deploy` against the database, then the pod exits.
+# One-off migration run: `prisma migrate deploy` against the database, then the passwords of the
+# services' database roles from the Secret db-roles (libs/database/scripts/set-role-passwords.mjs);
+# then the pod exits.
 #   kubectl apply -f deploy/k8s/03-migrate-job.yaml
 # A Job's pod template cannot be changed, so to run it again by hand (a new image tag):
 #   kubectl -n restaurant delete job migrate
@@ -8,6 +10,7 @@
 # Names in this file and how they are linked:
 #   migrate           Job name; its pod is migrate-<random suffix>
 #   postgres          Secret created by hand (docs/deployment.md, step 4); the three keys are read one by one below
+#   db-roles          Secret created by hand: the password of each service role, keys named after the services
 #   db                host name = the Service from 02-postgres.yaml
 apiVersion: batch/v1
 kind: Job
@@ -56,6 +59,21 @@ spec:
             # so the password is never written into a manifest.
             - name: DATABASE_URL
               value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/$(POSTGRES_DB)
+            - name: AUTH_SERVICE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-roles
+                  key: auth-service
+            - name: MENU_SERVICE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-roles
+                  key: menu-service
+            - name: ORDERS_SERVICE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-roles
+                  key: orders-service
           # The scheduler needs this much free CPU on a node before the pod can start, and the
           # nodes have little left (docs/microservices.md, resources). The migration runs for a
           # few seconds and mostly waits on Postgres, so a small request is enough; without a CPU

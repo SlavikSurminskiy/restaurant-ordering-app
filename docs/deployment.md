@@ -73,7 +73,7 @@ terraform apply
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `01-namespace.yaml`        | `Namespace` `restaurant`                                                                                                                                                         |
 | `02-postgres.yaml`         | headless `Service` `db` + `StatefulSet` `pg-server` (Postgres 18) with a 50 GB PVC on the default `oci-bv` storage class                                                         |
-| `03-migrate-job.yaml`      | `Job` with the migrate image (`prisma migrate deploy`); no seed                                                                                                                  |
+| `03-migrate-job.yaml`      | `Job` with the migrate image (`prisma migrate deploy`, then the passwords of the services' database roles from `db-roles`); no seed                                              |
 | `04-orders-service.yaml`   | `ConfigMap` `orders-service-config`, `Deployment` `orders-service` (`replicas: 1`, `strategy: Recreate`: the status timer), `Service`                                            |
 | `05-frontend.yaml`         | `Deployment` + `Service` `frontend` (nginx; static files only)                                                                                                                   |
 | `08-auth-service.yaml`     | `ConfigMap` `auth-service-config`, `Deployment` `auth-service` (`replicas: 1`, `RollingUpdate`, probes on `/api/health`), `Service`; `JWT_SECRET` from the Secret `backend`      |
@@ -88,7 +88,14 @@ kubectl -n restaurant create secret generic postgres \
   --from-literal=POSTGRES_USER=restaurant --from-literal=POSTGRES_DB=restaurant \
   --from-literal=POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 kubectl -n restaurant create secret generic backend --from-literal=JWT_SECRET="$(openssl rand -hex 32)"
+# A password per service database role; hex, because they go into connection strings.
+kubectl -n restaurant create secret generic db-roles \
+  --from-literal=auth-service="$(openssl rand -hex 24)" \
+  --from-literal=menu-service="$(openssl rand -hex 24)" \
+  --from-literal=orders-service="$(openssl rand -hex 24)"
 ```
+
+The services never see `postgres` (the owner): each connects as its own role (`auth_service`, `menu_service`, `orders_service`) with data access to its own schema only. The roles and their grants come from a migration; the migrate Job sets their passwords from `db-roles` on every run, so a new password is a changed Secret and a sync (then restart the service, which reads the variable at start).
 
 A new release by hand: change the image tags in `03`–`05` and `08`–`10`, delete the finished `Job` (its template can't be changed) and apply `03`, then `05`, `08`, `09`, `10`, `07` and `04`. With Argo CD ([step 6](#6-gitops-argo-cd)) this happens on its own after every merge to `main`.
 
